@@ -392,19 +392,10 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(s['pmu_reflector']), 4)
         self.assertEqual(len(s['rssi']), 4)
 
-    def test_sample_frequency(self):
         self.helper_check_int_float(self.sample_dict, 'frequency', Sample)
-
-    def test_sample_pmu_values(self):
         self.helper_check_list_int_float(self.sample_dict, 'pmu_values', Sample)
-
-    def test_sample_pmu_initiator(self):
         self.helper_check_list_int_float(self.sample_dict, 'pmu_initiator', Sample)
-
-    def test_sample_pmu_reflector(self):
         self.helper_check_list_int_float(self.sample_dict, 'pmu_reflector', Sample)
-
-    def test_sample_rssi(self):
         self.helper_check_list_int_float(self.sample_dict, 'rssi', Sample)
 
 if __name__ == "__main__":
