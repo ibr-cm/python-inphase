@@ -3,6 +3,7 @@
 
 import unittest
 import datetime
+import os
 
 import yaml
 
@@ -15,9 +16,12 @@ class Experiment:
         self.file_path = path
 
         # open the experiment file
-        with open(self.file_path, 'r') as f:
+        mode = 'r' if os.path.exists(path) else 'w+'
+        with open(self.file_path, mode) as f:
             # read YAML data
             data = yaml.load(f.read())
+        if not data:
+            return
         if not isinstance(data, list):
             raise Exception('experiment file does not contain a list of measurements')
 
@@ -249,11 +253,16 @@ class UnitTest(unittest.TestCase):
         with self.assertRaises(Exception):
             Experiment('testdata/measurement_data/experiment_bad.yaml')
 
+    def test_experiment_new(self):
+        e = Experiment('test.yaml')
+        e.addMeasurement(Measurement(self.measurement_dict))
+        del e
+        os.unlink('test.yaml')
+
     def test_experiment_addMeasurement(self):
         # from: http://stackoverflow.com/questions/6587516/how-to-concisely-create-a-temporary-file-that-is-a-copy-of-another-file-in-pytho
         import tempfile
         import shutil
-        import os
 
         def create_temporary_copy(path):
             temp_dir = tempfile.gettempdir()
