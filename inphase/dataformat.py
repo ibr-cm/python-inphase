@@ -19,7 +19,7 @@ class Experiment:
         mode = 'r' if os.path.exists(path) else 'w+'
         with open(self.file_path, mode) as f:
             # read YAML data
-            data = yaml.load(f.read())
+            data = yaml.load(f)
         if not data:
             return
         if not isinstance(data, list):
@@ -45,7 +45,7 @@ class Experiment:
                 for s in d['samples']:
                     samples.append(dict(s))
                 d['samples'] = samples
-            f.write(yaml.dump([d]))
+            yaml.dump([d], f)
 
 
 class Measurement(dict):
