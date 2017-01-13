@@ -248,16 +248,16 @@ class UnitTest(unittest.TestCase):
         }
 
     def test_experiment(self):
-        Experiment('testdata/measurement_data/experiment.yaml')
+        Experiment('testdata/measurement_data/experiment.yml')
 
         with self.assertRaises(Exception):
-            Experiment('testdata/measurement_data/experiment_bad.yaml')
+            Experiment('testdata/measurement_data/experiment_bad.yml')
 
     def test_experiment_new(self):
-        e = Experiment('test.yaml')
+        e = Experiment('test.yml')
         e.addMeasurement(Measurement(self.measurement_dict))
         del e
-        os.unlink('test.yaml')
+        os.unlink('test.yml')
 
     def test_experiment_addMeasurement(self):
         # from: http://stackoverflow.com/questions/6587516/how-to-concisely-create-a-temporary-file-that-is-a-copy-of-another-file-in-pytho
@@ -270,14 +270,14 @@ class UnitTest(unittest.TestCase):
             shutil.copy2(path, temp_path)
             return temp_path
 
-        path = create_temporary_copy('testdata/measurement_data/experiment.yaml')
+        path = create_temporary_copy('testdata/measurement_data/experiment.yml')
 
         e = Experiment(path)
         e.addMeasurement(Measurement(self.measurement_dict))
         e.addMeasurement(Measurement(self.measurement_dict))
 
         import filecmp
-        self.assertTrue(filecmp.cmp(path, 'testdata/measurement_data/experiment_after_append.yaml'))
+        self.assertTrue(filecmp.cmp(path, 'testdata/measurement_data/experiment_after_append.yml'))
 
         os.unlink(path)
 
