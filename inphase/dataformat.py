@@ -6,6 +6,10 @@ import datetime
 import os
 
 import yaml
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 
 class Experiment:
@@ -19,7 +23,7 @@ class Experiment:
         mode = 'r' if os.path.exists(path) else 'w+'
         with open(self.file_path, mode) as f:
             # read YAML data
-            data = yaml.load(f)
+            data = yaml.load(f, Loader=Loader)
         if not data:
             return
         if not isinstance(data, list):
@@ -45,7 +49,7 @@ class Experiment:
                 for s in d['samples']:
                     samples.append(dict(s))
                 d['samples'] = samples
-            yaml.dump([d], f)
+            yaml.dump([d], f, Dumper=Dumper)
 
 
 class Measurement(dict):
