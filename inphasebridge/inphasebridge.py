@@ -3,6 +3,7 @@ import socket
 import sys
 import threading
 import time
+import glob
 
 import serial
 import serial.tools.list_ports
@@ -43,14 +44,14 @@ class SerialThread(StoppableThread):
         ser_lock.release()
 
     def getDevice(self):
-        usb_ports = list(serial.tools.list_ports.grep('ttyUSB'))
-        normal_ports = list(serial.tools.list_ports.grep('ttyS0'))
+        usb_ports = glob.glob('/dev/ttyUSB*')
+        normal_ports = glob.glob('/dev/ttyS*')
 
         # use USB serial device if available
         if len(usb_ports) > 0:
-            return usb_ports[0].device
+            return usb_ports[0]
         elif len(normal_ports) > 0:
-            return normal_ports[0].device
+            return normal_ports[0]
 
         return None
 
@@ -59,25 +60,23 @@ class SerialThread(StoppableThread):
         while not self.stopped():
             best_device = self.getDevice()
             if best_device != self.current_device:
-                ser_lock.acquire()
-                if ser_conn.is_open:
-                    logging.warn('Closing serial port %s', self.current_device)
-                    ser_conn.close()
-                if best_device is None:
-                    logging.warn('No serial port found!')
-                else:
-                    time.sleep(1)  # give udev a bit of time here to trigger
-                    ser_conn.port = best_device
-                    try:
-                        ser_conn.open()
-                        logging.info('Connected to serial port %s', best_device)
-                    except serial.serialutil.SerialException:
-                        # sometimes the device becomes unavailable between getDevice() and open()
-                        # just try again next time
-                        ser_lock.release()
-                        continue
-                self.current_device = best_device
-                ser_lock.release()
+                with ser_lock:
+                    if ser_conn.isOpen():
+                        logging.warn('Closing serial port %s', self.current_device)
+                        ser_conn.close()
+                    if best_device is None:
+                        logging.warn('No serial port found!')
+                    else:
+                        time.sleep(1)  # give udev a bit of time here to trigger
+                        ser_conn.port = best_device
+                        try:
+                            ser_conn.open()
+                            logging.info('Connected to serial port %s', best_device)
+                        except serial.serialutil.SerialException:
+                            # sometimes the device becomes unavailable between getDevice() and open()
+                            # just try again next time
+                            continue
+                    self.current_device = best_device
             time.sleep(1)  # wait a bit to reduce CPU load
 
 
@@ -120,8 +119,7 @@ class NetworkingThread(StoppableThread):
                 logging.info('Connected: %s', addr)
                 while not self.stopped():
                     time.sleep(0.1)
-                    ser_lock.acquire()
-                    if ser_conn.is_open:
+                    with ser_lock:
                         try:
                             data = conn.recv(1024)
                             if data:
@@ -133,10 +131,12 @@ class NetworkingThread(StoppableThread):
                             data = ser_conn.read(1024)
                             if data:
                                 logging.debug('read from serial: %s', data)
-                                conn.send(data)
+                                try:
+                                    conn.send(data)
+                                except BrokenPipeError:
+                                    break
                         except BlockingIOError as msg:
                             pass
-                    ser_lock.release()
                 logging.info('Disconnected: %s', addr)
 
 if __name__ == "__main__":
