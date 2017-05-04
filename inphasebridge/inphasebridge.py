@@ -113,9 +113,18 @@ class NetworkingThread(StoppableThread):
             if s is None:
                 logging.error('could not open socket')
                 sys.exit(1)
-            conn, addr = s.accept()
-            conn.setblocking(False)                                             # non-blocking receive
+            s.setblocking(False)
+            while True:
+                if self.stopped():
+                    return 0
+                # wait for connection
+                try:
+                    conn, addr = s.accept()
+                except BlockingIOError:
+                    continue
+                break  # break if we have a connection
             with conn:
+                conn.setblocking(False)                                             # non-blocking receive
                 logging.info('Connected: %s', addr)
                 while not self.stopped():
                     time.sleep(0.1)
