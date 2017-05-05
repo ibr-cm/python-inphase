@@ -75,17 +75,20 @@ class SerialThread(StoppableThread):
                         except serial.serialutil.SerialException:
                             # sometimes the device becomes unavailable between getDevice() and open()
                             # just try again next time
+                            logging.warn('Could not connect to serial port %s', best_device)
                             continue
                     self.current_device = best_device
             time.sleep(1)  # wait a bit to reduce CPU load
 
 
-class NetworkingThread(StoppableThread):
+class TCPThread(StoppableThread):
 
-    def __init__(self, host=None, port=50000):
-        super(NetworkingThread, self).__init__()
+    def __init__(self, host, port):
+        super(TCPThread, self).__init__()
         self.host = host
         self.port = port
+        self.conn = None
+        self.s = None
 
     def run(self):
         while not self.stopped():
@@ -93,60 +96,110 @@ class NetworkingThread(StoppableThread):
                                           socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
                 af, socktype, proto, canonname, sa = res
                 try:
-                    s = socket.socket(af, socktype, proto)
+                    self.s = socket.socket(af, socktype, proto)
                 except OSError as msg:
                     logging.error('OSError: %s', msg)
-                    s = None
+                    self.s = None
                     continue
                 try:
-                    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)     # do not wait for TCP TIMED_WAIT
-                    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)     # do not use nagle and send directly
-                    s.bind(sa)
-                    s.listen(1)
+                    self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)     # do not wait for TCP TIMED_WAIT
+                    self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)     # do not use nagle and send directly
+                    self.s.bind(sa)
+                    self.s.listen(1)
                     logging.info('Listening on %s:%s', self.host, self.port)
                 except OSError as msg:
                     logging.error('OSError: %s', msg)
-                    s.close()
-                    s = None
+                    self.s.close()
+                    self.s = None
                     continue
                 break
-            if s is None:
+            if self.s is None:
                 logging.error('could not open socket')
                 sys.exit(1)
-            s.setblocking(False)
+            self.s.setblocking(False)
             while True:
                 if self.stopped():
                     return 0
                 # wait for connection
                 try:
-                    conn, addr = s.accept()
+                    self.conn, addr = self.s.accept()
                 except BlockingIOError:
                     continue
                 break  # break if we have a connection
-            with conn:
-                conn.setblocking(False)                                             # non-blocking receive
+            with self.conn:
+                self.conn.setblocking(False)                                             # non-blocking receive
                 logging.info('Connected: %s', addr)
-                while not self.stopped():
-                    time.sleep(0.1)
-                    with ser_lock:
-                        try:
-                            data = conn.recv(1024)
-                            if data:
-                                logging.debug('write to serial: %s', data)
-                                try:
-                                    ser_conn.write(data)
-                                except serial.serialutil.SerialException as msg:
-                                    logging.error('SerialException: %s', msg)
-                            data = ser_conn.read(1024)
-                            if data:
-                                logging.debug('read from serial: %s', data)
-                                try:
-                                    conn.send(data)
-                                except BrokenPipeError:
-                                    break
-                        except BlockingIOError as msg:
-                            pass
+                self.loop()
                 logging.info('Disconnected: %s', addr)
+
+    def loop(self):
+        while not self.stopped():
+            time.sleep(0.1)
+
+
+class NetworkingThread(TCPThread):
+
+    def __init__(self, host=None, port=50000):
+        super(NetworkingThread, self).__init__(host, port)
+
+    def loop(self):
+        while not self.stopped():
+            time.sleep(0.1)
+            with ser_lock:
+                try:
+                    data = self.conn.recv(1024)
+                    if data:
+                        logging.debug('write to serial: %s', data)
+                        try:
+                            ser_conn.write(data)
+                        except serial.serialutil.SerialException as msg:
+                            logging.error('SerialException: %s', msg)
+                    data = ser_conn.read(1024)
+                    if data:
+                        logging.debug('read from serial: %s', data)
+                        try:
+                            self.conn.send(data)
+                        except BrokenPipeError:
+                            break
+                except BlockingIOError as msg:
+                    pass
+
+
+class ControlThread(TCPThread):
+
+    def __init__(self, host=None, port=50001, reset_pin=None):
+        super(ControlThread, self).__init__(host, port)
+
+    def loop(self):
+        data = bytearray()  # byte buffer that behaves like a file
+        while not self.stopped():
+            time.sleep(0.1)
+            try:
+                data += self.conn.recv(1024)
+            except BlockingIOError:
+                pass
+            # process all lines found
+            while b'\n' in data:
+                (line, data) = data.split(b'\n', 1)
+                if line == b'RESET':
+                    # TODO: do a reset if WiringPi is available
+                    try:
+                        import wiringpi
+                        wiringpi.wiringPiSetupGpio()                            # GPIO pin numbering
+                        wiringpi.pinMode(self.reset_pin, 1)                     # set reset pin to output
+                        wiringpi.digitalWrite(self.reset_pin, 0)                # write 0 (low) to reset pin
+                        wiringpi.pinMode(self.reset_pin, 0)                     # set reset pin back to input
+                        self.conn.send(b'200 OK\n')
+                    except ImportError:
+                        self.conn.send(b'501 NOT IMPLEMENTED\n')
+                elif line == b'STATUS':
+                    self.conn.send(b'200 OK\n')
+                    with ser_lock:
+                        ser_status = b'True' if ser_conn.isOpen() else b'False'
+                        self.conn.send(b'Device: ' + bytes(ser_conn.name, encoding='utf-8') + b'\n')
+                        self.conn.send(b'Connected: ' + ser_status + b'\n')
+                else:
+                    self.conn.send(b'400 BAD REQUEST\n')
 
 if __name__ == "__main__":
     import signal
@@ -155,12 +208,20 @@ if __name__ == "__main__":
         logging.info('Exiting...')
         serial_thread.stop()
         networking_thread.stop()
+        control_thread.stop()
 
     signal.signal(signal.SIGINT, signal_handler)
+
     serial_thread = SerialThread()
     networking_thread = NetworkingThread()
+    control_thread = ControlThread(reset_pin=7)
+
     serial_thread.start()
     networking_thread.start()
+    control_thread.start()
+
     serial_thread.join()
     networking_thread.join()
+    control_thread.join()
+
     logging.info('Goodbye!')
