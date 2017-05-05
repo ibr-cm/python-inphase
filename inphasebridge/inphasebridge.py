@@ -76,7 +76,6 @@ class SerialThread(StoppableThread):
                             # sometimes the device becomes unavailable between getDevice() and open()
                             # just try again next time
                             logging.warn('Could not connect to serial port %s', best_device)
-                            continue
                     self.current_device = best_device
             time.sleep(1)  # wait a bit to reduce CPU load
 
