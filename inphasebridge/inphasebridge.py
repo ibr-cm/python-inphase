@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import glob
+import subprocess
 
 import serial
 import serial.tools.list_ports
@@ -168,6 +169,7 @@ class ControlThread(TCPThread):
 
     def __init__(self, host=None, port=50001, reset_pin=None):
         super(ControlThread, self).__init__(host, port)
+        self.reset_pin = reset_pin
 
     def loop(self):
         data = bytearray()  # byte buffer that behaves like a file
@@ -181,16 +183,18 @@ class ControlThread(TCPThread):
             while b'\n' in data:
                 (line, data) = data.split(b'\n', 1)
                 if line == b'RESET':
-                    # TODO: do a reset if WiringPi is available
+                    if 'USB' in ser_conn.name:
+                        # TODO: reset via inga_tool if device is connected via USB
+                        self.conn.send(b'501 NOT IMPLEMENTED (usb reset not supported)\n')
+                        continue
+                    # when it is not a USB device, reset via gpio binary
                     try:
-                        import wiringpi
-                        wiringpi.wiringPiSetupGpio()                            # GPIO pin numbering
-                        wiringpi.pinMode(self.reset_pin, 1)                     # set reset pin to output
-                        wiringpi.digitalWrite(self.reset_pin, 0)                # write 0 (low) to reset pin
-                        wiringpi.pinMode(self.reset_pin, 0)                     # set reset pin back to input
-                        self.conn.send(b'200 OK\n')
-                    except ImportError:
-                        self.conn.send(b'501 NOT IMPLEMENTED\n')
+                        subprocess.run(['gpio', 'mode', str(self.reset_pin), 'out'])
+                        subprocess.run(['gpio', 'write', str(self.reset_pin), '0'])
+                        subprocess.run(['gpio', 'mode', str(self.reset_pin), 'in'])
+                    except FileNotFoundError:
+                        # this can fail on machines that do not have the gpio binary
+                        self.conn.send(b'501 NOT IMPLEMENTED (gpio binary missing)\n')
                 elif line == b'STATUS':
                     self.conn.send(b'200 OK\n')
                     with ser_lock:
