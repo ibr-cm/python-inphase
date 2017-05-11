@@ -180,6 +180,7 @@ class ControlThread(TCPThread):
             # process all lines found
             while b'\n' in data:
                 (line, data) = data.split(b'\n', 1)
+                line = line.rstrip()
                 if line == b'RESET':
                     if 'USB' in ser_conn.name:
                         # TODO: reset via inga_tool if device is connected via USB
