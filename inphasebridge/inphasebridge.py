@@ -174,9 +174,16 @@ class ControlThread(TCPThread):
         while not self.stopped():
             time.sleep(0.1)
             try:
-                data += self.conn.recv(1024)
-            except BlockingIOError:
+                new_data = self.conn.recv(1024)
+            except BlockingIOError as msg:
+                # this means the socket is still open, but has no new data
                 pass
+            else:
+                if not new_data:
+                    # no new data means the socket is closed, return from this loop
+                    break
+                else:
+                    data += new_data
             # process all lines found
             while b'\n' in data:
                 (line, data) = data.split(b'\n', 1)
