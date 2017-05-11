@@ -7,8 +7,6 @@ import glob
 import subprocess
 
 import serial
-import serial.tools.list_ports
-
 
 import logging
 logging.basicConfig(level=logging.INFO)
