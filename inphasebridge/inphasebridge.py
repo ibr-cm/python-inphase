@@ -195,9 +195,10 @@ class ControlThread(TCPThread):
                         continue
                     # when it is not a USB device, reset via gpio binary
                     try:
-                        subprocess.run(['gpio', 'mode', str(self.reset_pin), 'out'])
-                        subprocess.run(['gpio', 'write', str(self.reset_pin), '0'])
-                        subprocess.run(['gpio', 'mode', str(self.reset_pin), 'in'])
+                        subprocess.call(['gpio', 'mode', str(self.reset_pin), 'out'])
+                        subprocess.call(['gpio', 'write', str(self.reset_pin), '0'])
+                        subprocess.call(['gpio', 'mode', str(self.reset_pin), 'in'])
+                        self.conn.send(b'200 OK\n')
                     except FileNotFoundError:
                         # this can fail on machines that do not have the gpio binary
                         self.conn.send(b'501 NOT IMPLEMENTED (gpio binary missing)\n')
