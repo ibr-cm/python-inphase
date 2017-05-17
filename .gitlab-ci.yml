@@ -7,3 +7,9 @@ dataformat:
   script:
     - cd inphase
     - ./dataformat.py
+
+binarydecoder:
+  stage: test
+  script:
+    - cd inphase
+    - ./binarydecoder.py
