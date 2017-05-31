@@ -13,3 +13,9 @@ binarydecoder:
   script:
     - cd inphase
     - ./binarydecoder.py
+
+pmumath:
+  stage: test
+  script:
+    - cd inphase
+    - ./pmumath.py
