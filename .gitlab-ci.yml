@@ -1,6 +1,6 @@
 before_script:
   - apt-get update -qy
-  - apt-get install -y python3 python3-yaml
+  - apt-get install -y python3 python3-yaml python3-numpy
 
 dataformat:
   stage: test
