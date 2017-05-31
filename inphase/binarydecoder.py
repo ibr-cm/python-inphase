@@ -46,13 +46,33 @@ def decodeBinary(data):
         frame = _unescape(frame)
 
         # unpack the byte sin the frame
-        measurement = _parsePacket(frame)
+        measurement_data = _parsePacket(frame)
 
-        if not measurement:
+        if not measurement_data:
             # frame was invalid, this means byte were lost on serial connection or we found frame delimiter that do not actually delimit a frame at all
             # add the frame to clean_data, as it is not a valid frame and might contain other output
             clean_data += raw_frame
             continue
+
+        # set up a measurement in the correct data format
+        reflector = Node({
+            'uid': measurement_data['reflector_address']
+            })
+
+        samples = list()
+
+        for freq, values in zip(measurement_data['frequencies'], measurement_data['values']):
+            samples.append(Sample({
+                'frequency': freq,
+                'pmu_values': values
+                }))
+
+        measurement = Measurement({
+            'dqi': measurement_data['dist_quality'],
+            'measured_distance': measurement_data['dist_meter'] * 1000 + measurement_data['dist_centimeter'] * 10,
+            'reflector': reflector,
+            'samples': samples
+            })
 
         measurements.append(measurement)
 
@@ -146,9 +166,8 @@ class UnitTest(unittest.TestCase):
             measurements += m
 
         self.assertEqual(len(measurements), 665)
-        self.assertEqual(len(measurements[100]['frequencies']), 200)
-        self.assertEqual(len(measurements[100]['values']), 200)
-        self.assertEqual(measurements[100]['reflector_address'], 9476)
+        self.assertEqual(len(measurements[100]['samples']), 200)
+        self.assertEqual(measurements[100]['reflector']['uid'], 9476)
         self.assertEqual(clean_data, self.clean_reference)
         self.assertEqual(remaining_data, self.remaining_reference)
 
