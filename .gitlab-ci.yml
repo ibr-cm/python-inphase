@@ -19,3 +19,9 @@ pmumath:
   script:
     - cd inphase
     - ./pmumath.py
+
+measurementprovider:
+  stage: test
+  script:
+    - cd inphase
+    - ./measurementprovider.py
