@@ -76,15 +76,15 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(p.getMeasurements()), 665)
         self.assertEqual(len(p.getMeasurements()), 0)
 
-        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10, loop=True)
+        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=0.1, loop=True)
         self.assertEqual(len(p.getMeasurements()), 0)
-        time.sleep(0.02)
+        time.sleep(2)
         self.assertEqual(len(p.getMeasurements()), 0)
-        time.sleep(0.03)
+        time.sleep(3)
         self.assertEqual(len(p.getMeasurements()), 0)
-        time.sleep(0.02)
+        time.sleep(2)
         self.assertEqual(len(p.getMeasurements()), 0)
-        time.sleep(0.03)
+        time.sleep(3)
         self.assertEqual(len(p.getMeasurements()), 1)
 
 
