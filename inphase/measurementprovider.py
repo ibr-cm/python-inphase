@@ -145,11 +145,22 @@ class UnitTest(unittest.TestCase):
     def tearDown(self):
         self.p.close()
 
+    def checkTimestamps(self, measurements):
+        timestamps = list()
+        for m in measurements:
+            timestamps.append(m['timestamp'])
+        last_t = timestamps[0]
+        for t in timestamps[1:]:
+            self.assertGreater(t, last_t)
+            last_t = t
+
     @unittest.skip("test cannot work in CI")
     def test_SerialMeasurementProvider(self):
         self.p = SerialMeasurementProvider('/dev/ttyUSB0')
         time.sleep(2)  # wait for some measurements to arrive
-        self.assertGreaterEqual(len(self.p.getMeasurements()), 1)
+        measurements = self.p.getMeasurements()
+        self.checkTimestamps(measurements)
+        self.assertGreaterEqual(len(measurements), 1)
 
     def test_BinaryFileMeasurementProvider1(self):
         self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10, loop=True)
@@ -189,7 +200,9 @@ class UnitTest(unittest.TestCase):
     def test_InPhaseBridgeMeasurementProvider(self):
         self.p = InPhaseBridgeMeasurementProvider('localhost')
         time.sleep(2)
-        self.assertGreaterEqual(len(self.p.getMeasurements()), 1)
+        measurements = self.p.getMeasurements()
+        self.checkTimestamps(measurements)
+        self.assertGreaterEqual(len(measurements), 1)
 
 
 if __name__ == "__main__":
