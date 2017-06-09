@@ -95,9 +95,16 @@ class SerialMeasurementProvider(MeasurementProvider):
 
 class BinaryFileMeasurementProvider(ConstantRateMeasurementProvider):
 
-    def __init__(self, file_name, output_rate=1, loop=True):
-        with open(file_name, 'rb') as f:
-            self.measurements, self.remaining, self.clean = decodeBinary(f.read())
+    def __init__(self, file_names, output_rate=1, loop=True):
+        self.measurements = list()
+        self.clean = bytes()
+        if not isinstance(file_names, list):
+            file_names = [file_names]
+        for file_name in file_names:
+            with open(file_name, 'rb') as f:
+                m, r, c = decodeBinary(f.read())
+            self.measurements += m
+            self.clean += c
 
         super(BinaryFileMeasurementProvider, self).__init__(self.measurements, output_rate, loop)
 
@@ -214,6 +221,12 @@ class UnitTest(unittest.TestCase):
         self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10000, loop=False)
         time.sleep(0.1)
         self.assertEqual(len(self.p.getMeasurements()), 665)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+
+    def test_BinaryFileMeasurementProviderMultiple(self):
+        self.p = BinaryFileMeasurementProvider(['testdata/serial_data/test_13.txt', 'testdata/serial_data/test_13.txt'], output_rate=20000, loop=False)
+        time.sleep(0.1)
+        self.assertEqual(len(self.p.getMeasurements()), 665*2)
         self.assertEqual(len(self.p.getMeasurements()), 0)
 
     def test_ConstantRateMeasurementProvider1(self):
