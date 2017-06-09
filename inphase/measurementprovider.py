@@ -19,6 +19,43 @@ class MeasurementProvider:
         pass
 
 
+class ConstantRateMeasurementProvider(MeasurementProvider):
+
+    def __init__(self, measurements, output_rate=1, loop=True):
+        self.measurements = measurements
+        self.output_rate = output_rate
+        self.loop = loop
+
+        self.last_timestamp = time.time()
+        self.last_index = 0
+
+    def getMeasurements(self):
+        # get current time
+        t = time.time()
+
+        # time since last call to this function
+        delta = t - self.last_timestamp
+
+        # number of measurements that need to be returned (have been generated since the last call)
+        measurement_count = math.floor(delta * self.output_rate)
+
+        # get measurements from list
+        to_return = list()
+        if self.loop:
+            for i in range(measurement_count):
+                self.last_index = (self.last_index + i) % len(self.measurements)
+                to_return.append(self.measurements[self.last_index])
+        else:
+            to_return = self.measurements[self.last_index:self.last_index+measurement_count]
+            self.last_index += measurement_count
+
+        # timestamp from this call is saved only when measurements were returned
+        if measurement_count > 0:
+            self.last_timestamp = t
+
+        return to_return
+
+
 class SerialMeasurementProvider(MeasurementProvider):
 
     def __init__(self, serial_port, baudrate=38400):
@@ -56,43 +93,13 @@ class SerialMeasurementProvider(MeasurementProvider):
         self.running = False
 
 
-class BinaryFileMeasurementProvider(MeasurementProvider):
+class BinaryFileMeasurementProvider(ConstantRateMeasurementProvider):
 
     def __init__(self, file_name, output_rate=1, loop=True):
-        self.output_rate = output_rate
-        self.loop = loop
-
         with open(file_name, 'rb') as f:
             self.measurements, self.remaining, self.clean = decodeBinary(f.read())
 
-        self.last_timestamp = time.time()
-        self.last_index = 0
-
-    def getMeasurements(self):
-        # get current time
-        t = time.time()
-
-        # time since last call to this function
-        delta = t - self.last_timestamp
-
-        # number of measurements that need to be returned (have been generated since the last call)
-        measurement_count = math.floor(delta * self.output_rate)
-
-        # get measurements from list
-        to_return = list()
-        if self.loop:
-            for i in range(measurement_count):
-                self.last_index = (self.last_index + i) % len(self.measurements)
-                to_return.append(self.measurements[self.last_index])
-        else:
-            to_return = self.measurements[self.last_index:self.last_index+measurement_count]
-            self.last_index += measurement_count
-
-        # timestamp from this call is saved only when measurements were returned
-        if measurement_count > 0:
-            self.last_timestamp = t
-
-        return to_return
+        super(BinaryFileMeasurementProvider, self).__init__(self.measurements, output_rate, loop)
 
 
 class InPhaseBridgeMeasurementProvider(MeasurementProvider):
