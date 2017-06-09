@@ -102,6 +102,7 @@ class UnitTest(unittest.TestCase):
     def tearDown(self):
         self.p.close()
 
+    @unittest.skip("test cannot work in CI")
     def test_SerialMeasurementProvider(self):
         self.p = SerialMeasurementProvider('/dev/ttyUSB0')
         time.sleep(2)  # wait for some measurements to arrive
