@@ -137,6 +137,54 @@ class InPhaseBridgeMeasurementProvider(MeasurementProvider):
         self.running = False
 
 
+class YAMLMeasurementProvider(MeasurementProvider):
+
+    def __init__(self, experiment_file, realtime=True, output_rate=1, loop=True):
+        self.realtime = realtime
+        self.measurements = Experiment(experiment_file).measurements
+
+        # if this should not run in real time, just use the constant rate provider...
+        if not self.realtime:
+            self.provider = ConstantRateMeasurementProvider(self.measurements, output_rate, loop)
+            self.getMeasurements = self.provider.getMeasurements
+        else:
+            for m in self.measurements:
+                if 'timestamp' not in m:
+                    raise Exception('Measurements do not contain timestamps!')
+            self.loop = loop
+            self.last_index = -1
+            self.time_offset = time.time() - self.measurements[0]['timestamp']
+            self.last_timestamp = self.measurements[0]['timestamp']
+
+    def getMeasurements(self):
+        # get current system time and convert to measurement time
+        current_time = time.time()
+        measurement_time = current_time - self.time_offset
+
+        to_return = list()
+
+        i = self.last_index
+        while True:
+            i += 1
+            if i >= len(self.measurements):
+                if not self.loop:
+                    # not looping, break here
+                    break
+                else:
+                    # start over
+                    i = 0
+                    self.time_offset = current_time - self.measurements[0]['timestamp']
+                    measurement_time = self.measurements[0]['timestamp']
+            if self.measurements[i]['timestamp'] > measurement_time:
+                break
+
+            to_return += [self.measurements[i]]
+            self.last_index = i
+
+        self.last_timestamp = measurement_time
+        return to_return
+
+
 class UnitTest(unittest.TestCase):
 
     def setUp(self):
@@ -209,6 +257,45 @@ class UnitTest(unittest.TestCase):
         measurements = self.p.getMeasurements()
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+
+    def test_YAMLMeasurementProviderConstantRate(self):
+        self.p = YAMLMeasurementProvider('testdata/measurement_data/timestamped.yml', realtime=False, output_rate=10000, loop=False)
+        time.sleep(0.1)
+        self.assertEqual(len(self.p.getMeasurements()), 7)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+
+    def test_YAMLMeasurementProviderRealtimeLoop(self):
+        self.p = YAMLMeasurementProvider('testdata/measurement_data/timestamped.yml', realtime=True, loop=True)
+        self.assertEqual(len(self.p.getMeasurements()), 1)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 3)
+        time.sleep(0.1)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+        time.sleep(0.5)
+        self.assertEqual(len(self.p.getMeasurements()), 2)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 2)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 3)
+
+    def test_YAMLMeasurementProviderRealtime(self):
+        self.p = YAMLMeasurementProvider('testdata/measurement_data/timestamped.yml', realtime=True, loop=False)
+        self.assertEqual(len(self.p.getMeasurements()), 1)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 3)
+        time.sleep(0.1)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+        time.sleep(0.5)
+        self.assertEqual(len(self.p.getMeasurements()), 2)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 1)
+        time.sleep(1)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+
+    def test_YAMLMeasurementProviderRealtimeFull(self):
+        self.p = YAMLMeasurementProvider('testdata/measurement_data/timestamped.yml', realtime=True, loop=False)
+        time.sleep(2)
+        self.assertEqual(len(self.p.getMeasurements()), 7)
 
 
 if __name__ == "__main__":
