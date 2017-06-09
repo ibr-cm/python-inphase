@@ -10,6 +10,7 @@ import math
 import serial
 import select
 import threading
+import socket
 
 
 class MeasurementProvider:
@@ -94,6 +95,41 @@ class BinaryFileMeasurementProvider(MeasurementProvider):
         return to_return
 
 
+class InPhaseBridgeMeasurementProvider(MeasurementProvider):
+
+    def __init__(self, address, port=50000):
+        self.address = address
+        self.port = port
+        self.remaining = bytes()
+        self.clean = bytes()
+        self.measurements = list()
+        self.measurements_lock = threading.Lock()
+        self.running = True
+        self.child_thread = threading.Thread(target=self.socket_thread)
+        self.child_thread.start()
+
+    def socket_thread(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.address, self.port))
+        while self.running:
+            avail_read, avail_write, avail_error = select.select([self.sock], [], [], 1)
+            sock_data = self.sock.recv(1000)
+            measurements, self.remaining, clean = decodeBinary(self.remaining + sock_data)
+            with self.measurements_lock:
+                self.measurements += measurements
+            self.clean += clean
+        self.sock.close()
+
+    def getMeasurements(self):
+        with self.measurements_lock:
+            measurements = self.measurements
+            self.measurements = list()  # use a new list, to not return the last measurements again
+        return measurements
+
+    def close(self):
+        self.running = False
+
+
 class UnitTest(unittest.TestCase):
 
     def setUp(self):
@@ -141,6 +177,12 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(3)
         self.assertEqual(len(self.p.getMeasurements()), 1)
+
+    @unittest.skip("test cannot work in CI")
+    def test_InPhaseBridgeMeasurementProvider(self):
+        self.p = InPhaseBridgeMeasurementProvider('localhost')
+        time.sleep(2)
+        self.assertGreaterEqual(len(self.p.getMeasurements()), 1)
 
 
 if __name__ == "__main__":
