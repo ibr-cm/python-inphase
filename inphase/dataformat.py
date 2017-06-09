@@ -32,24 +32,28 @@ class Experiment:
         for measurement in data:
             self.measurements.append(Measurement(measurement))
 
-    def addMeasurement(self, measurement):
+    def addMeasurements(self, measurements):
         # this adds the measurement and saves it to the disk (appends to file)
-        self.measurements.append(measurement)
+        self.measurements += measurements
 
         # write to disk
         # make sure it writes pure yaml, no python objects
         with open(self.file_path, 'a') as f:
-            d = dict(measurement)
-            if 'initiator' in d:
-                d['initiator'] = dict(d['initiator'])
-            if 'reflector' in d:
-                d['reflector'] = dict(d['reflector'])
-            if 'samples' in d:
-                samples = list()
-                for s in d['samples']:
-                    samples.append(dict(s))
-                d['samples'] = samples
-            yaml.dump([d], f, Dumper=Dumper)
+            for measurement in measurements:
+                d = dict(measurement)
+                if 'initiator' in d:
+                    d['initiator'] = dict(d['initiator'])
+                if 'reflector' in d:
+                    d['reflector'] = dict(d['reflector'])
+                if 'samples' in d:
+                    samples = list()
+                    for s in d['samples']:
+                        samples.append(dict(s))
+                    d['samples'] = samples
+                yaml.dump([d], f, Dumper=Dumper)
+
+    def addMeasurement(self, measurement):
+        self.addMeasurements([measurement])
 
 
 class Measurement(dict):
@@ -279,6 +283,28 @@ class UnitTest(unittest.TestCase):
         e = Experiment(path)
         e.addMeasurement(Measurement(self.measurement_dict))
         e.addMeasurement(Measurement(self.measurement_dict))
+
+        import filecmp
+        self.assertTrue(filecmp.cmp(path, 'testdata/measurement_data/experiment_after_append.yml'))
+
+        os.unlink(path)
+
+    def test_experiment_addMeasurements(self):
+        # from: http://stackoverflow.com/questions/6587516/how-to-concisely-create-a-temporary-file-that-is-a-copy-of-another-file-in-pytho
+        import tempfile
+        import shutil
+
+        def create_temporary_copy(path):
+            temp_dir = tempfile.gettempdir()
+            temp_path = os.path.join(temp_dir, 'temp_file_name')
+            shutil.copy2(path, temp_path)
+            return temp_path
+
+        path = create_temporary_copy('testdata/measurement_data/experiment.yml')
+
+        e = Experiment(path)
+        measurements = [Measurement(self.measurement_dict), Measurement(self.measurement_dict)]
+        e.addMeasurements(measurements)
 
         import filecmp
         self.assertTrue(filecmp.cmp(path, 'testdata/measurement_data/experiment_after_append.yml'))
