@@ -13,11 +13,10 @@ except ImportError:
 
 
 class Experiment:
-    measurements = list()
-    file_path = None
 
     def __init__(self, path):
         self.file_path = path
+        self.measurements = list()
 
         # open the experiment file
         mode = 'r' if os.path.exists(path) else 'w+'
@@ -256,7 +255,11 @@ class UnitTest(unittest.TestCase):
         }
 
     def test_experiment(self):
-        Experiment('testdata/measurement_data/experiment.yml')
+        e = Experiment('testdata/measurement_data/experiment.yml')
+        self.assertEqual(len(e.measurements), 2)
+
+        e = Experiment('testdata/measurement_data/experiment.yml')
+        self.assertEqual(len(e.measurements), 2)
 
         with self.assertRaises(Exception):
             Experiment('testdata/measurement_data/experiment_bad.yml')
