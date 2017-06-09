@@ -1,15 +1,58 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from dataformat import Experiment, Measurement
+from dataformat import Experiment
 from binarydecoder import decodeBinary
 
 import unittest
 import time
 import math
+import serial
+import select
+import threading
+
 
 class MeasurementProvider:
-    pass
+
+    def close(self):
+        pass
+
+
+class SerialMeasurementProvider(MeasurementProvider):
+
+    def __init__(self, serial_port, baudrate=38400):
+        self.serial_port = serial_port
+        self.baudrate = baudrate
+        self.remaining = bytes()
+        self.clean = bytes()
+        self.measurements = list()
+        self.measurements_lock = threading.Lock()
+        self.running = True
+        self.child_thread = threading.Thread(target=self.serial_thread)
+        self.child_thread.start()
+
+    def serial_thread(self):
+        # serial_for_url() allows more fancy usage of this class
+        try:
+            with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
+                while self.running:
+                    avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
+                    ser_data = self.ser.read(1000)
+                    measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
+                    with self.measurements_lock:
+                        self.measurements += measurements
+                    self.clean += clean
+        except serial.serialutil.SerialException:
+            print('ERROR: serial port %s not available' % (self.serial_port))
+
+    def getMeasurements(self):
+        with self.measurements_lock:
+            measurements = self.measurements
+            self.measurements = list()  # use a new list, to not return the last measurements again
+        return measurements
+
+    def close(self):
+        self.running = False
 
 
 class BinaryFileMeasurementProvider(MeasurementProvider):
@@ -56,36 +99,47 @@ class UnitTest(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_BinaryFileMeasurementProvider(self):
-        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10, loop=True)
-        self.assertEqual(len(p.getMeasurements()), 0)
+    def tearDown(self):
+        self.p.close()
+
+    def test_SerialMeasurementProvider(self):
+        self.p = SerialMeasurementProvider('/dev/ttyUSB0')
+        time.sleep(2)  # wait for some measurements to arrive
+        self.assertGreaterEqual(len(self.p.getMeasurements()), 1)
+
+    def test_BinaryFileMeasurementProvider1(self):
+        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10, loop=True)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(0.1)
-        self.assertEqual(len(p.getMeasurements()), 1)
+        self.assertEqual(len(self.p.getMeasurements()), 1)
         time.sleep(0.5)
-        self.assertEqual(len(p.getMeasurements()), 5)
+        self.assertEqual(len(self.p.getMeasurements()), 5)
 
-        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=1000, loop=True)
-        self.assertGreaterEqual(len(p.getMeasurements()), 0)
+    def test_BinaryFileMeasurementProvider2(self):
+        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=1000, loop=True)
+        self.assertGreaterEqual(len(self.p.getMeasurements()), 0)
         time.sleep(0.1)
-        self.assertGreaterEqual(len(p.getMeasurements()), 100)
+        self.assertGreaterEqual(len(self.p.getMeasurements()), 100)
         time.sleep(0.5)
-        self.assertGreaterEqual(len(p.getMeasurements()), 500)
+        self.assertGreaterEqual(len(self.p.getMeasurements()), 500)
 
-        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10000, loop=False)
+    def test_BinaryFileMeasurementProvider3(self):
+        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10000, loop=False)
         time.sleep(0.1)
-        self.assertEqual(len(p.getMeasurements()), 665)
-        self.assertEqual(len(p.getMeasurements()), 0)
+        self.assertEqual(len(self.p.getMeasurements()), 665)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
 
-        p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=0.1, loop=True)
-        self.assertEqual(len(p.getMeasurements()), 0)
+    def test_BinaryFileMeasurementProvider4(self):
+        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=0.1, loop=True)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(2)
-        self.assertEqual(len(p.getMeasurements()), 0)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(3)
-        self.assertEqual(len(p.getMeasurements()), 0)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(2)
-        self.assertEqual(len(p.getMeasurements()), 0)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(3)
-        self.assertEqual(len(p.getMeasurements()), 1)
+        self.assertEqual(len(self.p.getMeasurements()), 1)
 
 
 if __name__ == "__main__":
