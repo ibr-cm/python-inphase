@@ -140,7 +140,7 @@ class InPhaseBridgeMeasurementProvider(MeasurementProvider):
 class UnitTest(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.measurements = Experiment('testdata/measurement_data/timestamped.yml').measurements
 
     def tearDown(self):
         self.p.close()
@@ -162,30 +162,36 @@ class UnitTest(unittest.TestCase):
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
 
-    def test_BinaryFileMeasurementProvider1(self):
-        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10, loop=True)
+    def test_BinaryFileMeasurementProvider(self):
+        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10000, loop=False)
+        time.sleep(0.1)
+        self.assertEqual(len(self.p.getMeasurements()), 665)
+        self.assertEqual(len(self.p.getMeasurements()), 0)
+
+    def test_ConstantRateMeasurementProvider1(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=10, loop=True)
         self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(0.1)
         self.assertEqual(len(self.p.getMeasurements()), 1)
         time.sleep(0.5)
         self.assertEqual(len(self.p.getMeasurements()), 5)
 
-    def test_BinaryFileMeasurementProvider2(self):
-        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=1000, loop=True)
+    def test_ConstantRateMeasurementProvider2(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=1000, loop=True)
         self.assertGreaterEqual(len(self.p.getMeasurements()), 0)
         time.sleep(0.1)
         self.assertGreaterEqual(len(self.p.getMeasurements()), 100)
         time.sleep(0.5)
         self.assertGreaterEqual(len(self.p.getMeasurements()), 500)
 
-    def test_BinaryFileMeasurementProvider3(self):
-        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=10000, loop=False)
+    def test_ConstantRateMeasurementProvider3(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=10000, loop=False)
         time.sleep(0.1)
-        self.assertEqual(len(self.p.getMeasurements()), 665)
+        self.assertEqual(len(self.p.getMeasurements()), 7)
         self.assertEqual(len(self.p.getMeasurements()), 0)
 
-    def test_BinaryFileMeasurementProvider4(self):
-        self.p = BinaryFileMeasurementProvider('testdata/serial_data/test_13.txt', output_rate=0.1, loop=True)
+    def test_ConstantRateMeasurementProvider4(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=0.1, loop=True)
         self.assertEqual(len(self.p.getMeasurements()), 0)
         time.sleep(2)
         self.assertEqual(len(self.p.getMeasurements()), 0)
