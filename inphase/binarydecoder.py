@@ -5,6 +5,7 @@ from dataformat import Measurement, Node, Sample
 
 import unittest
 from struct import unpack, calcsize
+import time
 
 # as defined in at86rf233.c
 SERIAL_FRAME_START     = 0x3C      # "<" in ascii
@@ -13,7 +14,7 @@ SERIAL_ESCAPE_BYTE     = 0x40      # "@" in ascii
 SERIAL_ESCAPE_ADD      = 0x10      # add this to byte after escape
 
 
-def decodeBinary(data):
+def decodeBinary(data, timestamp=True):
     """Returns parsed measurements from binary data, also returns remaining data that still needs parsing and clean data that does not contain any other binary data."""
     measurements = list()
     remaining_data = data
@@ -73,6 +74,9 @@ def decodeBinary(data):
             'reflector': reflector,
             'samples': samples
             })
+
+        if timestamp:
+            measurement['timestamp'] = time.time()
 
         measurements.append(measurement)
 
