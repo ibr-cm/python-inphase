@@ -1,27 +1,8 @@
 before_script:
   - apt-get update -qy
-  - apt-get install -y python3 python3-yaml python3-numpy python3-serial
+  - apt-get install -y python3 python3-setuptools
 
-dataformat:
+test_library:
   stage: test
   script:
-    - cd inphase
-    - ./dataformat.py
-
-binarydecoder:
-  stage: test
-  script:
-    - cd inphase
-    - ./binarydecoder.py
-
-pmumath:
-  stage: test
-  script:
-    - cd inphase
-    - ./pmumath.py
-
-measurementprovider:
-  stage: test
-  script:
-    - cd inphase
-    - ./measurementprovider.py
+    - python3 setup.py test

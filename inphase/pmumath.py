@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-from dataformat import Experiment
-
-import unittest
 import numpy as np
 
 
@@ -63,28 +57,3 @@ def _slopeToDist(m, fd=0.5):
     l = c / (float(fd) * 10**6) * 0.5   # effective wavelength
     d_max = l / 2                       # maximum distance with given frequency delta
     return d_max * m * 1000             # return value in millimeter
-
-
-class UnitTest(unittest.TestCase):
-
-    def setUp(self):
-        # load sample measurement
-        self.e = Experiment('testdata/math_data/experiment.yml')
-
-    def test_calcDistFFT(self):
-        distance, dqi = calcDistFFT(self.e.measurements[0])
-        self.assertAlmostEqual(distance, 24966.18043, places=5)
-        self.assertAlmostEqual(dqi, 3109082.67547, places=5)
-
-    def test_calcDistFFTDetailed(self):
-        fft_bins = 1024
-        distance, dqi, autocorr_data, fft_data = calcDistFFTDetailed(self.e.measurements[0], fft_bins=fft_bins)
-
-        self.assertAlmostEqual(distance, 24966.18043, places=5)
-        self.assertAlmostEqual(dqi, 3109082.67547, places=5)
-        self.assertEqual(autocorr_data.size, len(self.e.measurements[0]['samples'])-1)
-        self.assertEqual(fft_data.size, int(fft_bins/2))
-
-
-if __name__ == "__main__":
-    unittest.main()

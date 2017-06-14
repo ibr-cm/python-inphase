@@ -1,2 +1,5 @@
 *.pyc
 .coverage
+/dist/
+/*.egg-info
+/*.egg
