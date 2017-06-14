@@ -43,7 +43,7 @@ class ConstantRateMeasurementProvider(MeasurementProvider):
         to_return = list()
         if self.loop:
             for i in range(measurement_count):
-                self.last_index = (self.last_index + i) % len(self.measurements)
+                self.last_index = (self.last_index + 1) % len(self.measurements)
                 to_return.append(self.measurements[self.last_index])
         else:
             to_return = self.measurements[self.last_index:self.last_index+measurement_count]
@@ -309,6 +309,20 @@ class UnitTest(unittest.TestCase):
         self.p = YAMLMeasurementProvider('testdata/measurement_data/timestamped.yml', realtime=True, loop=False)
         time.sleep(2)
         self.assertEqual(len(self.p.getMeasurements()), 7)
+
+    def test_ConstantRateMeasurementProviderNotSame(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=1, loop=True)
+        i = 0
+        m_list = list()
+        while i < 30:
+            time.sleep(0.1)
+            measurements = self.p.getMeasurements()
+            if measurements:
+                for m in measurements:
+                    m_list.append(m)
+            i += 1
+        for i in range(len(m_list)-2):
+            self.assertNotEqual(m_list[i]['timestamp'], m_list[i+1]['timestamp'], 'timestamps should not be equal!')
 
 
 if __name__ == "__main__":
