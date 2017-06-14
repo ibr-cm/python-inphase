@@ -1,6 +1,6 @@
 before_script:
   - apt-get update -qy
-  - apt-get install -y python3 python3-setuptools openssl
+  - apt-get install -y python3 python3-setuptools python3-certifi
 
 test_library:
   stage: test
