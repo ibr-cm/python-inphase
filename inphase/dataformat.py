@@ -31,6 +31,9 @@ class Experiment:
         for measurement in data:
             self.measurements.append(Measurement(measurement))
 
+    def __iter__(self):
+        return self.measurements.__iter__()
+
     def addMeasurements(self, measurements):
         # this adds the measurement and saves it to the disk (appends to file)
         self.measurements += measurements
