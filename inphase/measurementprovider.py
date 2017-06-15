@@ -1,5 +1,6 @@
 from inphase import Experiment
 from inphase import decodeBinary
+from inphase import decodeParameters
 
 import time
 import math
@@ -73,6 +74,59 @@ class SerialMeasurementProvider(MeasurementProvider):
                     avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
                     ser_data = self.ser.read(1000)
                     measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
+                    with self.measurements_lock:
+                        self.measurements += measurements
+                    self.clean += clean
+        except serial.serialutil.SerialException:
+            print('ERROR: serial port %s not available' % (self.serial_port))
+
+    def getMeasurements(self):
+        with self.measurements_lock:
+            measurements = self.measurements
+            self.measurements = list()  # use a new list, to not return the last measurements again
+        return measurements
+
+    def close(self):
+        self.running = False
+
+class InphasectlMeasurementProvider(MeasurementProvider):
+    def __init__(self, serial_port, baudrate=38400):
+        self.serial_port = serial_port
+        self.baudrate = baudrate
+        self.remaining = bytes()
+        self.clean = bytes()
+        self.measurements = list()
+        self.measurements_lock = threading.Lock()
+        self.running = True
+        self.child_thread = threading.Thread(target=self.serial_thread)
+        self.child_thread.start()
+
+    def set_param(self, param, value, ser):
+        print("Setting '%s' to value '%s'" % (param, value))
+        lines = self.send_cmd('set %s %s' % (param, value), ser)
+
+    def send_cmd(self, cmd_str, ser):
+        ser.write(b"inphasectl %s \n" % cmd_str.encode('utf-8'))
+        ser.flush() # it is buffering. required to get the data out *now*
+
+    def serial_thread(self):
+        # serial_for_url() allows more fancy usage of this class
+        try:
+            with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
+                self.set_param("distance_sensor0.start", 1, self.ser)
+                while self.running:
+                    avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
+                    ser_data = self.ser.read(1000)
+                    measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
+                    parameters, remaining2, clean = decodeParameters(clean)
+
+                    if "distance_sensor0.start" in parameters:
+                        print("ds0.start:", parameters['distance_sensor0.start'])
+                        if parameters['distance_sensor0.start'] == 0:
+                            self.set_param("distance_sensor0.start", 1, self.ser)
+                        else:
+                            self.set_param("distance_sensor0.start", 0, self.ser)
+
                     with self.measurements_lock:
                         self.measurements += measurements
                     self.clean += clean

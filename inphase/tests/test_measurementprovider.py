@@ -35,6 +35,14 @@ class UnitTest(unittest.TestCase):
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
 
+    # @unittest.skip("test cannot work in CI")
+    def test_InphasectlMeasurementProvider(self):
+        self.p = SerialMeasurementProvider('/dev/ttyUSB0')
+        time.sleep(2)  # wait for some measurements to arrive
+        measurements = self.p.getMeasurements()
+        # self.checkTimestamps(measurements)
+        self.assertGreaterEqual(len(measurements), 1)
+
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)
         time.sleep(0.1)
