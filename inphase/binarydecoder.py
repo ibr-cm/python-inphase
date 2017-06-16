@@ -1,6 +1,5 @@
 from inphase.dataformat import Measurement, Node, Sample
 
-import unittest
 from struct import unpack, calcsize
 import time
 
