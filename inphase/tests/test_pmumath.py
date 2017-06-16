@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from inphase import Experiment, calcDistFFT, calcDistFFTDetailed
+from inphase import Experiment, calcDistFFT, calcDistFFTDetailed, calcDistComplexDetailed
 
 import unittest
 import os
@@ -26,6 +26,15 @@ class UnitTest(unittest.TestCase):
         self.assertAlmostEqual(distance, 24966.18043, places=5)
         self.assertAlmostEqual(dqi, 3109082.67547, places=5)
         self.assertEqual(autocorr_data.size, len(self.e.measurements[0]['samples'])-1)
+        self.assertEqual(fft_data.size, int(fft_bins/2))
+
+    def test_calcDistComplexDetailed(self):
+        fft_bins = 1024
+        distance, dqi, complex_data, fft_data = calcDistComplexDetailed(self.e.measurements[0], fft_bins=fft_bins)
+
+        self.assertAlmostEqual(distance, 24673.41436, places=5)
+        self.assertAlmostEqual(dqi, 77.00836, places=5)
+        self.assertEqual(complex_data.size, len(self.e.measurements[0]['samples']))
         self.assertEqual(fft_data.size, int(fft_bins/2))
 
 
