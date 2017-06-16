@@ -71,6 +71,8 @@ def _parse_line(line_to_parse):
                 except Exception:
                     # parse as string
                     pass
+            else:
+                key = value = None
 
         except Exception as excpt:
             logger.debug("Exception: {}".format(type(excpt)))
