@@ -19,27 +19,36 @@ class UnitTest(unittest.TestCase):
 
         # self.remaining_reference = b"<\x01\x00\t`\x00\xc8x\x04\x00\x00\x00\x01\xdc\xf4@.c\xfc\xd0\x154O\xab\xf4\xfbt\xf9\x03\xf1,48\x9c\xa6\xfc\xb0*\xc6\xcf]\xbb\xf2?&\x17oI\xec5\xe5:*\x04\x91\x049/\x85\xc7\xdfH\xd6D\xa3 \x81\xeb\x12,$,e\xf2\xb1\x05:L\x86\xca\xf9Y\x01h\xe7)\x196\xc5\xe6\x95\xf8y\xe9\x97\x9eJ\x96[%*)\xa3D\x0e18\xf8\x0cx\xcd\\\xbb\xd3../platform/inga/Makefile.inga:221: recipe for target 'login' failed\n"
 
-    def test_parsing(self):
-        # split serial data into pieces of 10 bytes
-        # data_pieces = [self.serial_data[i:i+10] for i in range(0, len(self.serial_data), 10)]
+    @unittest.skip
+    def test_parsing_complete(self):
         remaining_data = bytes()
         parameters = list()
         clean_data = bytearray()
-        # for d in data_pieces:
-            # remaining_data += d
-            # m, remaining_data, c = inphase.decodeBinary(remaining_data)
-            # clean_data += c
-            # parameters += m
         remaining_data = self.serial_data
         p, remaining_data, c = inphase.decodeParameters(remaining_data)
         parameters += p
 
         self.assertEqual(len(parameters), 1)
-        self.assertDictEqual(parameters, {'test_key': 1234})
-        # self.assertEqual(len(parameters[100]['samples']), 200)
-        # self.assertEqual(parameters[100]['reflector']['uid'], 9476)
-        # self.assertEqual(clean_data, self.clean_reference)
-        # self.assertEqual(remaining_data, self.remaining_reference)
+        self.assertDictEqual(parameters[0], {'test_key': 1234})
+        self.assertEqual(c, b'Contiki is nice\r\n')
+        self.assertEqual(remaining_data, b'incompl')
+
+    def test_parsing_pieces(self):
+        # split serial data into pieces of 10 bytes
+        data_pieces = [self.serial_data[i:i+10] for i in range(0, len(self.serial_data), 10)]
+        remaining_data = bytes()
+        parameters = list()
+        clean_data = bytearray()
+        for d in data_pieces:
+            remaining_data += d
+            remaining_data_before = remaining_data
+            p, remaining_data, c = inphase.decodeParameters(remaining_data)
+            parameters += p
+            if not p:
+                self.assertEqual(c+remaining_data, remaining_data_before)
+
+        self.assertEqual(len(parameters), 1)
+        self.assertDictEqual(parameters[0], {'test_key': 1234})
 
 if __name__ == "__main__":
     unittest.main()

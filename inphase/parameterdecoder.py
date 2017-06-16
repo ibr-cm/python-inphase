@@ -7,7 +7,7 @@ logger = logging.getLogger()
 
 try:
     import coloredlogs
-    coloredlogs.install(level='DEBUG', logger=logger, fmt="%(levelname)s %(message)s")
+    coloredlogs.install(level='ERROR', logger=logger, fmt="%(levelname)s %(message)s")
 except ImportError:
     logger.info("Module coloredlogs not found, using default logging")
 
@@ -22,84 +22,36 @@ def decodeParameters(data, timestamp=True):
     remaining_data = data
     clean_data = bytearray()
 
+    start = 0
+    end = -1
 
-    if data != b'':
-        # logger.debug("data: %s" % data)
-        lines = data.split(b'\r\n')
-
-        for line in lines[:-1]:
-            # logger.debug("line: %s" % line)
-            parameter = _parse_line(line.decode())
-            if parameter:
-                parameters.append(parameter)
-            else:
-                clean_data += line + b'\r\n'
-
-        remaining_data = lines[-1:]
-
-        remaining_data[-1] += b'\r\n'
-
-        # while True:
-            # start = remaining_data.find(SERIAL_FRAME_START)
-            # end = remaining_data.find(SERIAL_FRAME_END, start)
-
-            # if start == -1:
-                # # no start byte detected
-                # break
-            # if end == -1:
-                # # no end byte detected
-                # break
-
-            # if we reach this, next frame is found
-
-            # # remove data before the frame from remaining data, it does not contain any more binary frames
-            # clean_data += remaining_data[0:start]
-            # # extract frame from remaining data
-            # raw_frame = remaining_data[start:end+1]
-            # # remaining data is now everything after the current frame
-            # remaining_data = remaining_data[end+1:]
-
-            # # now parse the frame contents
-            # frame = bytearray(raw_frame)
-
-            # # remove all byte stuffing instances
-            # frame = _unescape(frame)
-
-            # # unpack the byte sin the frame
-            # parameter_data = _parsePacket(frame)
-
-            # if not parameter_data:
-                # # frame was invalid, this means byte were lost on serial connection or we found frame delimiter that do not actually delimit a frame at all
-                # # add the frame to clean_data, as it is not a valid frame and might contain other output
-                # clean_data += raw_frame
-                # continue
-
-            # # set up a parameter in the correct data format
-            # reflector = Node({
-                # 'uid': parameter_data['reflector_address']
-                # })
-
-            # samples = list()
-
-            # for freq, values in zip(parameter_data['frequencies'], parameter_data['values']):
-                # samples.append(Sample({
-                    # 'frequency': freq,
-                    # 'pmu_values': values
-                    # }))
-
-            # parameter = parameter({
-                # 'dqi': parameter_data['dist_quality'],
-                # 'measured_distance': parameter_data['dist_meter'] * 1000 + parameter_data['dist_centimeter'] * 10,
-                # 'reflector': reflector,
-                # 'samples': samples
-                # })
-
-            # if timestamp:
-                # parameter['timestamp'] = time.time()
-
-        logger.debug("parameters: %s" % parameters)
+    while True:
+        start = 0
+        logger.debug("> start {} end {}".format(start, end))
         logger.debug("remaining_data: %s" %  remaining_data)
-        logger.debug("clean_data %s\n" % clean_data)
+        end = remaining_data.find(b'\r\n', start)
+        if end == -1:
+            break
+        logger.debug((len("remaining_data b'")+end)*' '+"^")
+        logger.debug("end {}".format(end))
+
+        line = remaining_data[start:end]
+        logger.debug("line: %s" % line)
+        parameter = _parse_line(line.decode())
+
+        remaining_data = remaining_data[end+2:]
+
+        start = end
+
+        if parameter:
+            parameters.append(parameter)
+        else:
+            logger.debug("ignoring %s" % line)
+            clean_data += line + b'\r\n'
+
+    logger.debug("parameters: %s" % parameters)
+    logger.debug("remaining_data: %s" %  remaining_data)
+    logger.debug("clean_data %s\n" % clean_data)
 
     return parameters, remaining_data, clean_data
 
