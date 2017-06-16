@@ -18,7 +18,7 @@ REGEX_KEYVALUE = r"^(\s*)(?P<key>[\w\.]+)(?P<sep>:\s*)(?P<value>[\S ]*)"
 
 def decodeParameters(data, timestamp=True):
     """Returns parsed parameters from data, also returns remaining data that still needs parsing and clean data that does not contain any parameters."""
-    parameters = list()
+    parameters = dict()
     remaining_data = data
     clean_data = bytearray()
 
@@ -37,14 +37,14 @@ def decodeParameters(data, timestamp=True):
 
         line = remaining_data[start:end]
         logger.debug("line: %s" % line)
-        parameter = _parse_line(line.decode())
+        parameter, value = _parse_line(line.decode())
 
         remaining_data = remaining_data[end+2:]
 
         start = end
 
         if parameter:
-            parameters.append(parameter)
+            parameters[parameter] = value
         else:
             logger.debug("ignoring %s" % line)
             clean_data += line + b'\r\n'
@@ -56,8 +56,8 @@ def decodeParameters(data, timestamp=True):
     return parameters, remaining_data, clean_data
 
 def _parse_line(line_to_parse):
-    received_data = {}
     # logger.debug("Parsing line: '{}'".format(line_to_parse))
+    key = value = None
     for keyvalues in re.compile(REGEX_KEYVALUE).finditer(str(line_to_parse)):
         try:
             key = keyvalues.group('key')
@@ -67,15 +67,16 @@ def _parse_line(line_to_parse):
             if _parse_kv(key, value):
                 try:
                     # try to parse as number (dec, hex)
-                    received_data[key] = int(value, 0)
+                    value = int(value, 0)
                 except Exception:
                     # parse as string
-                    received_data[key] = value
+                    pass
 
         except Exception as excpt:
             logger.debug("Exception: {}".format(type(excpt)))
             logger.error("no key-values")
-    return received_data
+
+    return key, value
 
 def _parse_kv(key, value):
     if value == "Contiki> ":
