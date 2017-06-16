@@ -90,42 +90,89 @@ class SerialMeasurementProvider(MeasurementProvider):
         self.running = False
 
 class InphasectlMeasurementProvider(MeasurementProvider):
-    def __init__(self, serial_port, baudrate=38400):
+    def __init__(self, serial_port, count=0, target=None, baudrate=38400):
         self.serial_port = serial_port
         self.baudrate = baudrate
-        self.remaining = bytes()
+        self.remaining_bindec = bytes()
+        self.remaining_padec = bytes()
+        self.remaining = self.remaining_padec
         self.clean = bytes()
         self.measurements = list()
         self.measurements_lock = threading.Lock()
         self.running = True
         self.child_thread = threading.Thread(target=self.serial_thread)
         self.child_thread.start()
+        self.parameters = dict()
+        self.target = target
+        self.count = count
+        self.measuring = False
+
+    def get_param(self, param, ser):
+        print("Getting parameter '%s' " % param)
+        self.send_cmd('get %s' % param, ser)
 
     def set_param(self, param, value, ser):
         print("Setting '%s' to value '%s'" % (param, value))
-        lines = self.send_cmd('set %s %s' % (param, value), ser)
+        self.send_cmd('set %s %s' % (param, value), ser)
 
     def send_cmd(self, cmd_str, ser):
         ser.write(b"inphasectl %s \n" % cmd_str.encode('utf-8'))
-        ser.flush() # it is buffering. required to get the data out *now*
+        ser.flush()  # it is buffering. required to get the data out *now*
 
     def serial_thread(self):
         # serial_for_url() allows more fancy usage of this class
         try:
             with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
-                self.set_param("distance_sensor0.start", 1, self.ser)
+                self.get_param("distance_sensor0.target", self.ser)
                 while self.running:
                     avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
                     ser_data = self.ser.read(1000)
+                    # print("ser_data: {}".format(ser_data))
                     measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
-                    parameters, remaining2, clean = decodeParameters(clean)
+                    # print("bindec -> remaining: {}".format(self.remaining))
+                    print("bindec -> len measurements: {}".format(len(measurements)))
+                    if clean != b'':
+                        # print("bindec -> clean: {}".format(clean))
+                        # print("padec -> data: {}".format(self.remaining_padec + clean))
+                        decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + clean)
+                        self.parameters.update(decoded_parameters)
+                        # print("padec -> parameters: {}".format(self.parameters))
+                        # print("padec  -> clean: {}".format(clean))
 
-                    if "distance_sensor0.start" in parameters:
-                        print("ds0.start:", parameters['distance_sensor0.start'])
-                        if parameters['distance_sensor0.start'] == 0:
-                            self.set_param("distance_sensor0.start", 1, self.ser)
+                        if "distance_sensor0.target" not in self.parameters:
+                            # print("bad! target not found")
+                            self.get_param("distance_sensor0.target", self.ser)
+                        elif "distance_sensor0.count" not in self.parameters:
+                            # print("bad! count not found")
+                            self.get_param("distance_sensor0.count", self.ser)
+                        elif "distance_sensor0.start" not in self.parameters:
+                            # print("bad! start not found")
+                            self.get_param("distance_sensor0.start", self.ser)
                         else:
-                            self.set_param("distance_sensor0.start", 0, self.ser)
+                            target = self.parameters['distance_sensor0.target']
+                            # print("nice! distance_sensor0.target is {}".format(target))
+                            if self.target is not None and target != self.target:
+                                self.set_param("distance_sensor0.target", self.target, self.ser)
+
+                            count = self.parameters['distance_sensor0.count']
+                            print("nice! distance_sensor0.count is {}".format(count))
+                            new_count = self.count - len(self.measurements)
+                            if new_count == 0:
+                                print("measurements done")
+                                self.measuring = False
+
+                            print("should provide {} measurements having {} remaining {}".format(self.count, len(self.measurements), new_count))
+                            if self.count is not 0 and count != self.count:
+                                self.set_param("distance_sensor0.count", new_count, self.ser)
+
+                            start = self.parameters['distance_sensor0.start']
+                            # print("nice! distance_sensor0.start is {}".format(start))
+                            if new_count > 0 and start is not 1:
+                                self.set_param("distance_sensor0.start", 1, self.ser)
+                                self.measuring = True
+                            elif new_count == 0:
+                                print("stopping measurements")
+                                self.set_param("distance_sensor0.start", 0, self.ser)
 
                     with self.measurements_lock:
                         self.measurements += measurements
@@ -134,9 +181,13 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             print('ERROR: serial port %s not available' % (self.serial_port))
 
     def getMeasurements(self):
+        # while self.measuring:
+            # pass
         with self.measurements_lock:
             measurements = self.measurements
             self.measurements = list()  # use a new list, to not return the last measurements again
+
+        print("returning")
         return measurements
 
     def close(self):
