@@ -1,10 +1,12 @@
 import datetime
 import os
+import warnings
 
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
+    warnings.warn("Using pure python yaml library, this might be very slow!", ImportWarning)
     from yaml import Loader, Dumper
 
 
