@@ -37,7 +37,7 @@ def decodeParameters(data, timestamp=True):
 
         line = remaining_data[start:end]
         logger.debug("line: %s" % line)
-        parameter, value = _parse_line(line.decode())
+        parameter, value = _parse_line(line.decode(errors='replace'))
 
         remaining_data = remaining_data[end+2:]
 
