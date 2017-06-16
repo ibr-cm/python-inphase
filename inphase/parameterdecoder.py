@@ -66,9 +66,11 @@ def _parse_line(line_to_parse):
             # logger.debug("value: {}({})".format(value, type(value)))
             if _parse_kv(key, value):
                 try:
-                    received_data[key] = int(value)
+                    # try to parse as number (dec, hex)
+                    received_data[key] = int(value, 0)
                 except Exception:
-                    received_data[key] = int(value)
+                    # parse as string
+                    received_data[key] = value
 
         except Exception as excpt:
             logger.debug("Exception: {}".format(type(excpt)))
