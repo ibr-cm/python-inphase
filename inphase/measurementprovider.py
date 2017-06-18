@@ -129,51 +129,44 @@ class InphasectlMeasurementProvider(MeasurementProvider):
                     ser_data = self.ser.read(1000)
                     # print("ser_data: {}".format(ser_data))
                     measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
+                    clean = ser_data
                     # print("bindec -> remaining: {}".format(self.remaining))
-                    print("bindec -> len measurements: {}".format(len(measurements)))
-                    if clean != b'':
-                        # print("bindec -> clean: {}".format(clean))
-                        # print("padec -> data: {}".format(self.remaining_padec + clean))
-                        decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + clean)
-                        self.parameters.update(decoded_parameters)
-                        # print("padec -> parameters: {}".format(self.parameters))
-                        # print("padec  -> clean: {}".format(clean))
+                    # print("bindec -> len measurements: {}".format(len(measurements)))
+                    # if clean != b'':
+                    # print("bindec -> clean: {}".format(clean))
+                    # print("padec -> data: {}".format(self.remaining_padec + clean))
+                    decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + clean)
+                    self.parameters.update(decoded_parameters)
+                    # print("padec -> parameters: {}".format(self.parameters))
+                    # print("padec  -> clean: {}".format(clean))
 
-                        if "distance_sensor0.target" not in self.parameters:
-                            # print("bad! target not found")
-                            self.get_param("distance_sensor0.target", self.ser)
-                        elif "distance_sensor0.count" not in self.parameters:
-                            # print("bad! count not found")
-                            self.get_param("distance_sensor0.count", self.ser)
-                        elif "distance_sensor0.start" not in self.parameters:
-                            # print("bad! start not found")
-                            self.get_param("distance_sensor0.start", self.ser)
-                        else:
-                            target = self.parameters['distance_sensor0.target']
-                            # print("nice! distance_sensor0.target is {}".format(target))
-                            if self.target is not None and target != self.target:
-                                self.set_param("distance_sensor0.target", self.target, self.ser)
+                    if "distance_sensor0.target" not in self.parameters:
+                        # print("bad! target not found")
+                        self.get_param("distance_sensor0.target", self.ser)
+                    elif "distance_sensor0.count" not in self.parameters:
+                        # print("bad! count not found")
+                        self.get_param("distance_sensor0.count", self.ser)
+                    elif "distance_sensor0.start" not in self.parameters:
+                        # print("bad! start not found")
+                        self.get_param("distance_sensor0.start", self.ser)
+                    else:
+                        target = self.parameters['distance_sensor0.target']
+                        count = self.parameters['distance_sensor0.count']
+                        start = self.parameters['distance_sensor0.start']
 
-                            count = self.parameters['distance_sensor0.count']
-                            print("nice! distance_sensor0.count is {}".format(count))
-                            new_count = self.count - len(self.measurements)
-                            if new_count == 0:
-                                print("measurements done")
-                                self.measuring = False
+                        # print("nice! distance_sensor0.start is {}".format(start))
+                        # print("nice! distance_sensor0.count is {}".format(count))
+                        # print("nice! distance_sensor0.target is {}".format(target))
 
-                            print("should provide {} measurements having {} remaining {}".format(self.count, len(self.measurements), new_count))
-                            if self.count is not 0 and count != self.count:
-                                self.set_param("distance_sensor0.count", new_count, self.ser)
-
-                            start = self.parameters['distance_sensor0.start']
-                            # print("nice! distance_sensor0.start is {}".format(start))
-                            if new_count > 0 and start is not 1:
+                        if self.target is not None and target != self.target:
+                            self.set_param("distance_sensor0.target", self.target, self.ser)
+                        elif self.count is not 0 and count != self.count:
+                            self.set_param("distance_sensor0.count", self.count, self.ser)
+                        elif self.measuring:
+                            if start == 0:
                                 self.set_param("distance_sensor0.start", 1, self.ser)
-                                self.measuring = True
-                            elif new_count == 0:
-                                print("stopping measurements")
-                                self.set_param("distance_sensor0.start", 0, self.ser)
-
+                        if start == 0:
+                            self.measuring = False
                     with self.measurements_lock:
                         self.measurements += measurements
                     self.clean += clean
@@ -181,13 +174,13 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             print('ERROR: serial port %s not available' % (self.serial_port))
 
     def getMeasurements(self):
-        # while self.measuring:
-            # pass
+        self.measuring = True
+        while self.measuring:
+            time.sleep(2.0)
         with self.measurements_lock:
             measurements = self.measurements
             self.measurements = list()  # use a new list, to not return the last measurements again
 
-        print("returning")
         return measurements
 
     def close(self):
