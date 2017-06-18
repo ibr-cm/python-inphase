@@ -37,7 +37,7 @@ class UnitTest(unittest.TestCase):
 
     # @unittest.skip("test cannot work in CI")
     def test_InphasectlMeasurementProvider(self):
-        self.p = SerialMeasurementProvider('/dev/ttyUSB0')
+        self.p = InphasectlMeasurementProvider('/dev/ttyUSB0')
         time.sleep(2)  # wait for some measurements to arrive
         measurements = self.p.getMeasurements()
         # self.checkTimestamps(measurements)
