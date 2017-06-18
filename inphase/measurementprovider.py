@@ -172,10 +172,12 @@ class InphasectlMeasurementProvider(MeasurementProvider):
                     self.clean += clean
         except serial.serialutil.SerialException:
             print('ERROR: serial port %s not available' % (self.serial_port))
+            self.running = False
+            self.measuring = False
 
     def getMeasurements(self):
         self.measuring = True
-        while self.measuring:
+        while self.measuring and self.running:
             time.sleep(2.0)
         with self.measurements_lock:
             measurements = self.measurements
