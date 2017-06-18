@@ -21,8 +21,11 @@ mytarget = 0xdb98
 provider = InphasectlMeasurementProvider('/dev/ttyUSB0', count=6, target=mytarget)
 signal.signal(signal.SIGINT, handler)
 
-while running:
+# while running:
+for x in range(5):
     measurements = provider.getMeasurements()
-    print("target %x got %s measurements" % (mytarget, len(measurements)))
-    print("sleep a second")
-    time.sleep(1)
+    print("(%d/%d) target %x got %s measurements" % (x+1, 5, mytarget, len(measurements)))
+    print("sleep 2 seconds")
+    time.sleep(2)
+
+provider.close()
