@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-import unittest
 import datetime
 import os
+import warnings
 
 import yaml
 try:
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError:
+    warnings.warn("Using pure python yaml library, this might be very slow!", ImportWarning)
     from yaml import Loader, Dumper
 
 
@@ -30,6 +28,9 @@ class Experiment:
 
         for measurement in data:
             self.measurements.append(Measurement(measurement))
+
+    def __iter__(self):
+        return self.measurements.__iter__()
 
     def addMeasurements(self, measurements):
         # this adds the measurement and saves it to the disk (appends to file)

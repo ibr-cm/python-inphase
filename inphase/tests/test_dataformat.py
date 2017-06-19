@@ -105,6 +105,11 @@ class UnitTest(unittest.TestCase):
         with self.assertRaises(Exception):
             Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/experiment_bad.yml'))
 
+    def test_experimentIterator(self):
+        e = Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'))
+        for m in e:
+            self.assertIsInstance(m, Measurement)
+
     def test_experiment_new(self):
         e = Experiment('test.yml')
         e.addMeasurement(Measurement(self.measurement_dict))
