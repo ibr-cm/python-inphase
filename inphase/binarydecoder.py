@@ -37,6 +37,12 @@ def decodeBinary(data, timestamp=True):
         # remaining data is now everything after the current frame
         remaining_data = remaining_data[end+1:]
 
+        if len(raw_frame) == 2:
+            # we have found an empty frame
+            print("frame invalid! no data between start and stop symbol.")
+            clean_data += raw_frame
+            continue
+
         # now parse the frame contents
         frame = bytearray(raw_frame)
 
