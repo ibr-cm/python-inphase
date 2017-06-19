@@ -22,6 +22,8 @@ def decodeBinary(data, timestamp=True):
 
         if start == -1:
             # no start byte detected
+            clean_data += remaining_data
+            remaining_data = bytearray()
             break
         if end == -1:
             # no end byte detected

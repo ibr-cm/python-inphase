@@ -20,6 +20,15 @@ class UnitTest(unittest.TestCase):
 
         self.remaining_reference = b"<\x01\x00\t`\x00\xc8x\x04\x00\x00\x00\x01\xdc\xf4@.c\xfc\xd0\x154O\xab\xf4\xfbt\xf9\x03\xf1,48\x9c\xa6\xfc\xb0*\xc6\xcf]\xbb\xf2?&\x17oI\xec5\xe5:*\x04\x91\x049/\x85\xc7\xdfH\xd6D\xa3 \x81\xeb\x12,$,e\xf2\xb1\x05:L\x86\xca\xf9Y\x01h\xe7)\x196\xc5\xe6\x95\xf8y\xe9\x97\x9eJ\x96[%*)\xa3D\x0e18\xf8\x0cx\xcd\\\xbb\xd3../platform/inga/Makefile.inga:221: recipe for target 'login' failed\n"
 
+    def test_full_clean_output(self):
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot.txt'), 'rb') as f:
+            input_data = f.read()
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_clean.txt'), 'rb') as f:
+            output_data = f.read()
+
+        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+
+        self.assertEqual(clean_data, output_data)
 
     def test_invalid_frame(self):
         test_data = b'<>'
