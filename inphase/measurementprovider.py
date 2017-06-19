@@ -129,7 +129,6 @@ class InphasectlMeasurementProvider(MeasurementProvider):
                     ser_data = self.ser.read(1000)
                     # print("ser_data: {}".format(ser_data))
                     measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
-                    clean = ser_data
                     # print("bindec -> remaining: {}".format(self.remaining))
                     # print("bindec -> len measurements: {}".format(len(measurements)))
                     # if clean != b'':
