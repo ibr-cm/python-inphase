@@ -59,6 +59,13 @@ def _slopeToDist(m, fd=0.5):
     return d_max * m * 1000             # return value in millimeter
 
 
+def _slopeToDist2(m, fd=0.5):
+    # fd is the sample spacing in MHz
+    c = 299792458                       # speed of light
+    l = c / (float(fd) * 10**6) * 0.5   # effective wavelength and maximum distance
+    return l * m * 1000                 # return value in millimeter
+
+
 def calcDistComplexDetailed(measurement, fft_bins=4096):
     """Calculates the distance via complex signal/fft from a given measurement"""
 
@@ -79,13 +86,13 @@ def calcDistComplexDetailed(measurement, fft_bins=4096):
     complex_signal = np.cos(means) + 1j * np.sin(means)
 
     # calculate fft
-    fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins/2)])
+    fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
 
     # find bin with maximum peak and normalize to [0, 1]
-    m = np.argmax(fft_result)/float(fft_bins/2.0)
+    m = np.argmax(fft_result)/float(fft_bins)
 
     # calculate distance from bin position
-    distance = _slopeToDist(m)
+    distance = _slopeToDist2(m)
     dqi = np.max(fft_result)
 
     # subtract antenna offsets if provided

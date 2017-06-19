@@ -35,7 +35,7 @@ class UnitTest(unittest.TestCase):
         self.assertAlmostEqual(distance, 24673.41436, places=5)
         self.assertAlmostEqual(dqi, 77.00836, places=5)
         self.assertEqual(complex_data.size, len(self.e.measurements[0]['samples']))
-        self.assertEqual(fft_data.size, int(fft_bins/2))
+        self.assertEqual(fft_data.size, int(fft_bins))
 
 
 if __name__ == "__main__":
