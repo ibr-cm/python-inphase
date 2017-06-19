@@ -123,7 +123,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         # serial_for_url() allows more fancy usage of this class
         try:
             with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
-                self.get_param("distance_sensor0.target", self.ser)
+                # self.get_param("distance_sensor0.target", self.ser)
                 while self.running:
                     avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
                     ser_data = self.ser.read(1000)
