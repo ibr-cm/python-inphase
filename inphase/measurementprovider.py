@@ -179,7 +179,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
     def getMeasurements(self):
         self.measuring = True
         while self.measuring and self.running:
-            print("waiting %s" % self.measuring)
+            print("waiting measuring %s running %s" % (self.measuring, self.running))
             time.sleep(2.0)
         with self.measurements_lock:
             measurements = self.measurements
