@@ -30,6 +30,14 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(clean_data, output_data)
 
+    def test_all_clean_before_start(self):
+        test_data = b'>>-- inphasectl --<<'
+        correct_clean = b'>>-- inphasectl --<'
+        measurements, remaining_data, clean = inphase.decodeBinary(test_data)
+        self.assertEqual(len(measurements), 0)
+        self.assertEqual(clean, correct_clean)
+        self.assertEqual(len(remaining_data), 1)
+
     def test_invalid_frame(self):
         test_data = b'<>'
         measurements, remaining_data, clean = inphase.decodeBinary(test_data)
