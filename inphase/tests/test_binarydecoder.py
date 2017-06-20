@@ -31,6 +31,17 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
 
+    def test_full_clean_output_broken(self):
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_broken.txt'), 'rb') as f:
+            input_data = f.read()
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_broken_clean.txt'), 'rb') as f:
+            output_data = f.read()
+
+        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+
+        self.assertEqual(len(measurements), 1)
+        self.assertEqual(clean_data, output_data)
+
     def test_all_clean_before_start(self):
         test_data = b'>>-- inphasectl --<<'
         correct_clean = b'>>-- inphasectl --<'
