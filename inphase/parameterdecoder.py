@@ -11,10 +11,7 @@ try:
 except ImportError:
     logger.info("Module coloredlogs not found, using default logging")
 
-# TODO: remove this and add to parser
-regex_params = r"^(?P<param>\w+)(?P<sep>:\W*)(?P<desc>[\w ]*)"
-
-REGEX_KEYVALUE = r"^(\s*)(?P<key>[\w\.]+)(?P<sep>:\s*)(?P<value>[\S ]*)"
+REGEX_KEYVALUE = r"^(\s*)(?P<key>(?:\w+\.){0,}(?:\w+))(?P<sep>:\s*)(?P<value>[\S ]*)"
 
 def decodeParameters(data, timestamp=True):
     """Returns parsed parameters from data, also returns remaining data that still needs parsing and clean data that does not contain any parameters."""
