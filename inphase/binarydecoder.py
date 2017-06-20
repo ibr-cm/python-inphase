@@ -18,16 +18,28 @@ def decodeBinary(data, timestamp=True):
 
     while True:
         start = remaining_data.find(SERIAL_FRAME_START)
-        end = remaining_data.find(SERIAL_FRAME_END, start)
 
         if start == -1:
             # no start byte detected
             clean_data += remaining_data
             remaining_data = bytearray()
             break
+
+        end = remaining_data.find(SERIAL_FRAME_END, start)
         if end == -1:
             # no end byte detected
+            clean_data += remaining_data[0:start]
+            remaining_data = remaining_data[start:]
+            start = remaining_data.rfind(SERIAL_FRAME_START)
+            if start != -1:
+                clean_data += remaining_data[0:start]
+                remaining_data = remaining_data[start:]
             break
+
+        last_start = remaining_data.rfind(SERIAL_FRAME_START, start, end)
+        if last_start != -1:
+            if last_start > start:
+                start = last_start
 
         # if we reach this, next frame is found
 

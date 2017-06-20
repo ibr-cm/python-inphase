@@ -1,0 +1,6 @@
+>>-- inphasectl --<<
+Writing distance sensor configuration
+distance_sensor0.start:1
+195.159: Contiki> 
+.distance_status: DISTANCE_RUNNING
+.........................................<distance_status: DISTANCE_IDLE
