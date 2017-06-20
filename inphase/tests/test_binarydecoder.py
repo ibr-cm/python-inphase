@@ -28,6 +28,7 @@ class UnitTest(unittest.TestCase):
 
         measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
 
+        self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
 
     def test_all_clean_before_start(self):
