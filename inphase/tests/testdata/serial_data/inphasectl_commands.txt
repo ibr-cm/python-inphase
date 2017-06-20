@@ -1,0 +1,30 @@
+help
+Available commands:
+?: shows this help
+blink [num]: blink LEDs ([num] times)
+exit: exit shell
+help: shows this help
+inphasectl <cmd> [params]: control the inphase system
+kill <command>: stop a specific command
+killall: stop all running commands
+null: discard input
+ps: list all running processes
+quit: exit shell
+reboot: reboot the system
+195.159: Contiki> 
+help
+Available commands:
+?: shows this help
+blink [num]: blink LEDs ([num] times)
+exit: exit shell
+help: shows this help
+inphasectl <cmd> [params]: control the inphase system
+kill <command>: stop a specific command
+killall: stop all running commands
+null: discard input
+ps: list all running processes
+quit: exit shell
+reboot: reboot the system
+195.159: Contiki> 
+11804(1)s
+Never-used stack > 7960 bytes
