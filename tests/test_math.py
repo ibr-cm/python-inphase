@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from inphase import Experiment, calculateDistance
+from inphase import Experiment
+from inphase.math import calculateDistance
 
 import unittest
 import os
