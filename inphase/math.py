@@ -1,3 +1,9 @@
+"""Math functions.
+
+This module contains math functions that are needed to work with InPhase measurement data.
+
+"""
+
 import numpy as np
 
 
@@ -6,7 +12,11 @@ def calculateDistance(measurement, calc_type='complex', **kwargs):
 
     Args:
         measurement (:obj:`Measurement`): The measurement to calculate a distance for.
-        calc_type (str, optional):  Algorithm to use for calculation.
+        calc_type (str, optional):  Algorithm to use for calculation:
+
+    `calc_type` can be one the following options:
+            * `real` will use the algorithm published in our `INFOCOM paper`_
+            * `complex` results in the more robust calculation via a complex valued FFT and allows double maximum distance, also allows usage of 'dc_threshold'
 
     Keyword Arguments:
         fft_bins (int): Number of FFT bins, more FFT bins result in higher resolution of the result.
@@ -18,10 +28,8 @@ def calculateDistance(measurement, calc_type='complex', **kwargs):
 
         Depending on the chosen `calc_type` the dict contains different extra information from the algorithms.
 
-    Note:
-        `calc_type` can be one two options:
-        * *real* will use the algorithm published in our INFOCOM paper
-        * *complex* results in the more robust calculation via a complex valued FFT and allows double maximum distance, also allows usage of *dc_threshold*
+    .. _INFOCOM paper:
+        https://www.ibr.cs.tu-bs.de/bib/xml/vonzengen:INFOCOM2016.html
     """
     extra_data = dict()
     if calc_type is 'real':
