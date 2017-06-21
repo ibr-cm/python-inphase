@@ -3,9 +3,7 @@ from .dataformat import Measurement
 from .dataformat import Node
 from .dataformat import Sample
 from .binarydecoder import decodeBinary
-from .pmumath import calcDistFFT
-from .pmumath import calcDistFFTDetailed
-from .pmumath import calcDistComplexDetailed
+from .pmumath import calculateDistance
 from .measurementprovider import ConstantRateMeasurementProvider
 from .measurementprovider import SerialMeasurementProvider
 from .measurementprovider import BinaryFileMeasurementProvider

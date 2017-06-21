@@ -1,13 +1,18 @@
 import numpy as np
 
 
-def calcDistFFT(measurement, fft_bins=4096):
-    """Calculates the distance via autocorrelation/fft from a given measurement"""
-    distance, dqi, autocorr_data, fft_data = calcDistFFTDetailed(measurement, fft_bins)
-    return distance, dqi
+def calculateDistance(measurement, calc_type='complex', **kwargs):
+    extra_data = dict()
+    if calc_type is 'real':
+        distance, extra_data['dqi'], extra_data['autocorrelation'], extra_data['fft'] = _calcDistReal(measurement, **kwargs)
+    elif calc_type is 'complex':
+        distance, extra_data['dqi'], extra_data['complex_signal'], extra_data['fft'] = _calcDistComplex(measurement, **kwargs)
+    else:
+        raise NotImplementedError('The chosen calc_type does not exist!')
+    return distance, extra_data
 
 
-def calcDistFFTDetailed(measurement, fft_bins=4096):
+def _calcDistReal(measurement, fft_bins=4096):
     """Calculates the distance via autocorrelation/fft from a given measurement"""
 
     # prepare lists for calculations
@@ -66,7 +71,7 @@ def _slopeToDist2(m, fd=0.5):
     return l * m * 1000                 # return value in millimeter
 
 
-def calcDistComplexDetailed(measurement, fft_bins=4096):
+def _calcDistComplex(measurement, fft_bins=4096, dc_threshold=0):
     """Calculates the distance via complex signal/fft from a given measurement"""
 
     # prepare lists for calculations
@@ -89,11 +94,16 @@ def calcDistComplexDetailed(measurement, fft_bins=4096):
     fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
 
     # find bin with maximum peak and normalize to [0, 1]
-    m = np.argmax(fft_result)/float(fft_bins)
+    argmax = np.argmax(fft_result)
+    if argmax < dc_threshold or argmax > fft_bins-dc_threshold:
+        distance = np.nan
+        dqi = 0
+    else:
+        m = argmax/float(fft_bins)
 
-    # calculate distance from bin position
-    distance = _slopeToDist2(m)
-    dqi = np.max(fft_result)
+        # calculate distance from bin position
+        distance = _slopeToDist2(m)
+        dqi = np.max(fft_result)
 
     # subtract antenna offsets if provided
     if 'initiator' in measurement:
