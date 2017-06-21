@@ -67,17 +67,14 @@ class SerialMeasurementProvider(MeasurementProvider):
 
     def serial_thread(self):
         # serial_for_url() allows more fancy usage of this class
-        try:
-            with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
-                while self.running:
-                    avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
-                    ser_data = self.ser.read(1000)
-                    measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
-                    with self.measurements_lock:
-                        self.measurements += measurements
-                    self.clean += clean
-        except serial.serialutil.SerialException:
-            print('ERROR: serial port %s not available' % (self.serial_port))
+        with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
+            while self.running:
+                avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
+                ser_data = self.ser.read(1000)
+                measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
+                with self.measurements_lock:
+                    self.measurements += measurements
+                self.clean += clean
 
     def getMeasurements(self):
         with self.measurements_lock:
