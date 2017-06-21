@@ -16,7 +16,8 @@ class UnitTest(unittest.TestCase):
         self.measurements = Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml')).measurements
 
     def tearDown(self):
-        self.p.close()
+        if hasattr(self, 'p'):
+            self.p.close()
 
     def checkTimestamps(self, measurements):
         timestamps = list()
@@ -127,6 +128,10 @@ class UnitTest(unittest.TestCase):
         self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'), realtime=True, loop=False)
         time.sleep(2)
         self.assertEqual(len(self.p.getMeasurements()), 7)
+
+    def test_YAMLMeasurementProviderException(self):
+        with self.assertRaises(Exception):
+            self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/experiment_no_timestamp.yml'), realtime=True, loop=False)
 
     def test_ConstantRateMeasurementProviderNotSame(self):
         self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=1, loop=True)
