@@ -1,0 +1,64 @@
+- dqi: 86
+  initiator:
+    antenna_offset: 563.4
+    location: [12000, 4000.5, null]
+    moving: false
+    name: Anchor 42
+    uid: 1e:e3:f5:ff:fe:91:dc:3e
+  measured_distance: 1230.5
+  real_distance: 1200
+  real_nlos: false
+  reflector:
+    antenna_offset: 563.4
+    location: [15000, 8000, null]
+    moving: false
+    name: Anchor 23
+    uid: 1e:e3:f5:ff:fe:91:dc:4f
+  samples:
+  - frequency: 2435.5
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]
+  - frequency: 2436
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]
+  - frequency: 2436.5
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]
+- dqi: 86
+  initiator:
+    antenna_offset: 563.4
+    location: [12000, 4000.5, null]
+    moving: false
+    name: Anchor 42
+    uid: 1e:e3:f5:ff:fe:91:dc:3e
+  measured_distance: 1230.5
+  real_distance: 1200
+  real_nlos: false
+  reflector:
+    antenna_offset: 563.4
+    location: [15000, 8000, null]
+    moving: false
+    name: Anchor 23
+    uid: 1e:e3:f5:ff:fe:91:dc:4f
+  samples:
+  - frequency: 2435.5
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]
+  - frequency: 2436
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]
+  - frequency: 2436.5
+    pmu_initiator: [49, 43, -10, 12]
+    pmu_reflector: [-95, -113, -126, 12]
+    pmu_values: [-112, -100, 120, 0]
+    rssi: [-70, -52, -60, -90]

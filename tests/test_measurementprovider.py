@@ -6,6 +6,7 @@ from inphase.measurementprovider import *
 
 import unittest
 import time
+import socket
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,13 +29,31 @@ class UnitTest(unittest.TestCase):
             self.assertGreater(t, last_t)
             last_t = t
 
-    @unittest.skip("test cannot work in CI")
     def test_SerialMeasurementProvider(self):
-        self.p = SerialMeasurementProvider('/dev/ttyUSB0')
-        time.sleep(2)  # wait for some measurements to arrive
+        # start a TCP server that reads from a file
+        serial_sock = socket.socket()
+        serial_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serial_sock.bind(('localhost', 50000))
+        serial_sock.listen(1)
+        serial_sock.setblocking(False)
+
+        self.p = SerialMeasurementProvider('socket://localhost:50000')
+
+        time.sleep(1)  # wait for SerialMeasurementProvider to connect
+
+        # accept connection
+        conn, addr = serial_sock.accept()
+
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
+            conn.send(f.read())
+
+        time.sleep(1)  # wait for some measurements to arrive
         measurements = self.p.getMeasurements()
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+
+        conn.close()
+        serial_sock.close()
 
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)
@@ -82,13 +101,31 @@ class UnitTest(unittest.TestCase):
         time.sleep(3)
         self.assertEqual(len(self.p.getMeasurements()), 1)
 
-    @unittest.skip("test cannot work in CI")
     def test_InPhaseBridgeMeasurementProvider(self):
+        # start a TCP server that reads from a file
+        serial_sock = socket.socket()
+        serial_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serial_sock.bind(('localhost', 50000))
+        serial_sock.listen(1)
+        serial_sock.setblocking(False)
+
         self.p = InPhaseBridgeMeasurementProvider('localhost')
-        time.sleep(2)
+
+        time.sleep(1)  # wait for SerialMeasurementProvider to connect
+
+        # accept connection
+        conn, addr = serial_sock.accept()
+
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
+            conn.send(f.read())
+
+        time.sleep(1)  # wait for some measurements to arrive
         measurements = self.p.getMeasurements()
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+
+        conn.close()
+        serial_sock.close()
 
     def test_YAMLMeasurementProviderConstantRate(self):
         self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'), realtime=False, output_rate=10000, loop=False)
