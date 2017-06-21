@@ -4,6 +4,8 @@
 from inphase import Experiment
 from inphase.math import calculateDistance
 
+import numpy as np
+
 import unittest
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -33,6 +35,16 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
+    def test_notImplemented(self):
+        with self.assertRaises(NotImplementedError):
+            distance, extra_data = calculateDistance(self.e.measurements[0], calc_type='foobar')
+
+    def test_dcThreshold(self):
+        fft_bins = 1024
+        distance, extra_data = calculateDistance(self.e.measurements[0], calc_type='complex', fft_bins=fft_bins, dc_threshold=89)
+
+        self.assertTrue(np.isnan(distance))
+        self.assertEqual(extra_data['dqi'], 0)
 
 if __name__ == "__main__":
     unittest.main()
