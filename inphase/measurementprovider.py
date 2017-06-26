@@ -10,6 +10,7 @@ import select
 import threading
 import socket
 import logging
+import queue
 
 class MeasurementProvider:
 
@@ -149,17 +150,23 @@ class InphasectlMeasurementProvider(MeasurementProvider):
 
     def measurement_thread(self):
         while self.running:
-            while self.node.remaining_padec != b'':
-                time.sleep(2.5)
-            measurements = self.process_data_stream(self.node.clean)
-            time.sleep(2.5)
+            try:
+                clean_data = self.node.data_queue.get(timeout=2)
+            except queue.Empty:
+                self.running = False
+                break
+            if clean_data is None:
+                break
+            # print("clean_data", clean_data)
+            measurements = self.process_data_stream(clean_data)
+            self.node.data_queue.task_done()
             with self.measurements_lock:
                 self.measurements += measurements
 
     def getMeasurements(self):
-        # print("measurements start")
-        # self.node.start()
         self.write_cfg(target=self.target, count=self.count)
+        print("measurements start")
+        self.node.start()
         while self.node.measuring:
             # print("waiting measuring %s running %s" % (self.measuring, self.running))
             time.sleep(2.0)
