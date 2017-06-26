@@ -4,6 +4,7 @@ import socket
 import threading
 import time
 import logging
+import queue
 
 from inphase.parameterdecoder import decodeParameters
 
@@ -27,6 +28,7 @@ class inphasectl():
         self.read_parameters = dict()
         self.remaining_padec = bytearray()
         self.single_query = False
+        self.data_queue = queue.Queue() 
         self.logger.info("init done")
 
     def connect(self, serial_port=None, baudrate=38400, address=None, port=50000):
@@ -155,6 +157,8 @@ class inphasectl():
                         self.read_parameters.update(decoded_parameters)
                         self.clean += clean
                         self.logger.debug("clean %s" % clean)
+                        if clean != b'':
+                            self.data_queue.put(clean)
 
                     if self.remaining_padec == b'':
                         if 'distance_sensor0.start' not in self.read_parameters:
