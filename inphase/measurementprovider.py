@@ -126,7 +126,8 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             value_to_set = settings[parameter_to_set]
             self.node.set_param(parameter_to_set, value_to_set)
             parameter_read = self.node.get_param_block(parameter_to_set)
-            if parameter_read is not value_to_set:
+            if parameter_read != value_to_set:
+                print("parameter_read", parameter_read, "value_to_set", value_to_set)
                 raise ValueError("Setting parameter failed %s", parameter_to_set)
 
     def process_data_stream(self, data):
@@ -156,9 +157,9 @@ class InphasectlMeasurementProvider(MeasurementProvider):
                 self.measurements += measurements
 
     def getMeasurements(self):
-        self.write_cfg()
         # print("measurements start")
         # self.node.start()
+        self.write_cfg(target=self.target, count=self.count)
         while self.node.measuring:
             # print("waiting measuring %s running %s" % (self.measuring, self.running))
             time.sleep(2.0)
