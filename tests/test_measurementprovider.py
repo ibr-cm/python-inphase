@@ -62,6 +62,7 @@ class UnitTest(unittest.TestCase):
         measurements = self.provider.getMeasurements()
         # self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+        self.provider.close()
 
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)
