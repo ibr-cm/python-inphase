@@ -60,9 +60,8 @@ class UnitTest(unittest.TestCase):
         self.provider = InphasectlMeasurementProvider('/dev/ttyUSB0', count=3, target=0xdb98)
         time.sleep(2)  # wait for some measurements to arrive
         measurements = self.provider.getMeasurements()
-        # self.checkTimestamps(measurements)
-        self.assertGreaterEqual(len(measurements), 1)
         self.provider.close()
+        self.assertGreaterEqual(len(measurements), 1)
 
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)
