@@ -3,6 +3,7 @@ import serial
 import socket
 import threading
 import time
+import logging
 
 from inphase.parameterdecoder import decodeParameters
 
