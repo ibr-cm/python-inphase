@@ -96,10 +96,9 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         self.measurements = list()
         self.measurements_lock = threading.Lock()
         self.running = True
-        logger = logging.getLogger('inphase.test.inphasectl')
+        logger = logging.getLogger('inphase.inphasectl')
         self.node = inphasectl(logger=logger)
         self.node.connect(serial_port, baudrate, address, port)
-        print("self.node", self.node)
         self.child_thread = threading.Thread(target=self.measurement_thread)
         self.child_thread.start()
 
@@ -140,11 +139,11 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             measurements (list): List of measurements extracted
         """
 
-        print("datastream: {}".format(data))
+        # print("datastream: {}".format(data))
         measurements, self.remaining, clean = decodeBinary(self.remaining + data)
-        print("bindec -> remaining: {}".format(self.remaining))
-        print("bindec -> len measurements: {}".format(len(measurements)))
-        print("bindec -> clean: {}".format(clean))
+        # print("bindec -> remaining: {}".format(self.remaining))
+        # print("bindec -> len measurements: {}".format(len(measurements)))
+        # print("bindec -> clean: {}".format(clean))
         return measurements
 
     def measurement_thread(self):
@@ -171,6 +170,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         return measurements
 
     def close(self):
+        print("closing")
         self.node.disconnect()
         self.running = False
 
