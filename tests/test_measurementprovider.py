@@ -6,6 +6,7 @@ from inphase.measurementprovider import *
 
 import unittest
 import time
+import socket
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,7 +17,8 @@ class UnitTest(unittest.TestCase):
         self.measurements = Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml')).measurements
 
     def tearDown(self):
-        self.p.close()
+        if hasattr(self, 'p'):
+            self.p.close()
 
     def checkTimestamps(self, measurements):
         timestamps = list()
@@ -27,13 +29,31 @@ class UnitTest(unittest.TestCase):
             self.assertGreater(t, last_t)
             last_t = t
 
-    @unittest.skip("test cannot work in CI")
     def test_SerialMeasurementProvider(self):
-        self.p = SerialMeasurementProvider('/dev/ttyUSB0')
-        time.sleep(2)  # wait for some measurements to arrive
+        # start a TCP server that reads from a file
+        serial_sock = socket.socket()
+        serial_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serial_sock.bind(('localhost', 50000))
+        serial_sock.listen(1)
+        serial_sock.setblocking(False)
+
+        self.p = SerialMeasurementProvider('socket://localhost:50000')
+
+        time.sleep(1)  # wait for SerialMeasurementProvider to connect
+
+        # accept connection
+        conn, addr = serial_sock.accept()
+
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
+            conn.send(f.read())
+
+        time.sleep(1)  # wait for some measurements to arrive
         measurements = self.p.getMeasurements()
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+
+        conn.close()
+        serial_sock.close()
 
     # @unittest.skip("test cannot work in CI")
     def test_InphasectlMeasurementProvider(self):
@@ -89,13 +109,31 @@ class UnitTest(unittest.TestCase):
         time.sleep(3)
         self.assertEqual(len(self.p.getMeasurements()), 1)
 
-    @unittest.skip("test cannot work in CI")
     def test_InPhaseBridgeMeasurementProvider(self):
+        # start a TCP server that reads from a file
+        serial_sock = socket.socket()
+        serial_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        serial_sock.bind(('localhost', 50000))
+        serial_sock.listen(1)
+        serial_sock.setblocking(False)
+
         self.p = InPhaseBridgeMeasurementProvider('localhost')
-        time.sleep(2)
+
+        time.sleep(1)  # wait for SerialMeasurementProvider to connect
+
+        # accept connection
+        conn, addr = serial_sock.accept()
+
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
+            conn.send(f.read())
+
+        time.sleep(1)  # wait for some measurements to arrive
         measurements = self.p.getMeasurements()
         self.checkTimestamps(measurements)
         self.assertGreaterEqual(len(measurements), 1)
+
+        conn.close()
+        serial_sock.close()
 
     def test_YAMLMeasurementProviderConstantRate(self):
         self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'), realtime=False, output_rate=10000, loop=False)
@@ -135,6 +173,10 @@ class UnitTest(unittest.TestCase):
         self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'), realtime=True, loop=False)
         time.sleep(2)
         self.assertEqual(len(self.p.getMeasurements()), 7)
+
+    def test_YAMLMeasurementProviderException(self):
+        with self.assertRaises(Exception):
+            self.p = YAMLMeasurementProvider(os.path.join(THIS_DIR, 'testdata/measurement_data/experiment_no_timestamp.yml'), realtime=True, loop=False)
 
     def test_ConstantRateMeasurementProviderNotSame(self):
         self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=1, loop=True)

@@ -6,3 +6,15 @@ test_library:
   stage: test
   script:
     - python3 setup.py test
+
+documentation:
+  stage: deploy
+  script:
+    - apt-get install -y python3-pip
+    - pip3 install sphinx
+    - python3 setup.py install
+    - cd doc
+    - make html
+  artifacts:
+    paths:
+      - doc/build

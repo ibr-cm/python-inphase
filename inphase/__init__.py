@@ -4,9 +4,7 @@ from .dataformat import Node
 from .dataformat import Sample
 from .binarydecoder import decodeBinary
 from .parameterdecoder import decodeParameters
-from .pmumath import calcDistFFT
-from .pmumath import calcDistFFTDetailed
-from .pmumath import calcDistComplexDetailed
+from . import math
 from .measurementprovider import ConstantRateMeasurementProvider
 from .measurementprovider import SerialMeasurementProvider
 from .measurementprovider import BinaryFileMeasurementProvider

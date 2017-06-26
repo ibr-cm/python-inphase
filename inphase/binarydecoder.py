@@ -120,17 +120,20 @@ def _parsePacket(frame):
     data = dict()
 
     unpack_str = '>BB'
-    samples, step = unpack(unpack_str, frame[0:calcsize(unpack_str)])
-
     unpack_str_2 = '>3H4B'
+    minimum_frame_length = calcsize(unpack_str)+calcsize(unpack_str_2)
+
+    if len(frame) < minimum_frame_length:
+        print("frame invalid! length was:", len(frame), ", minimum length is:", minimum_frame_length)
+        return None
+
+    samples, step = unpack(unpack_str, frame[0:calcsize(unpack_str)])
     frequency_start, measurements, reflector_address, dist_meter, dist_centimeter, dist_quality, status = unpack(unpack_str_2, frame[calcsize(unpack_str):calcsize(unpack_str)+calcsize(unpack_str_2)])
 
     if (step == 0):  # by definition 0 step size is 0.5
         step = 0.5
 
-    value_offset = calcsize(unpack_str)+calcsize(unpack_str_2)
-
-    expected_frame_length = measurements * samples + value_offset
+    expected_frame_length = measurements * samples + minimum_frame_length
 
     if (expected_frame_length != len(frame)):
         print("frame invalid! length was:", len(frame), ", expected length is:", expected_frame_length)
@@ -153,7 +156,7 @@ def _parsePacket(frame):
         data['frequencies'].append(frequency_start + i * step)
 
     data['values'] = list()
-    values = unpack('>' + str(measurements*samples) + 'b', frame[value_offset:])
+    values = unpack('>' + str(measurements*samples) + 'b', frame[minimum_frame_length:])
 
     for i in range(measurements):
         data['values'].append(list())
