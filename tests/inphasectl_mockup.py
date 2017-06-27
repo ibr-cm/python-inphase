@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import socket
+import os
+
+HOST = 'localhost'
+PORT = 50005
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+settings = dict()
+settings['distance_sensor0.allow_ranging'] = 1
+settings['distance_sensor0.count'] = 3
+settings['distance_sensor0.initiator'] = 0xc39f
+settings['distance_sensor0.output'] = 2
+settings['distance_sensor0.start'] = 0
+settings['distance_sensor0.target'] = 0xdb98
+
+#TODO add the pmu parameters
+# .max_freq = 2600,
+# .num_frequencies = 100};
+# .num_samples = 10,
+# .start_freq = 2400,
+
+
+def send_measurements(conn):
+    with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
+        print("sending file")
+        conn.send(f.read())
+        print("end of file")
+
+def main():
+    with socket.socket() as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((HOST, PORT))
+        s.listen(1)
+        conn, addr = s.accept()
+        with conn:
+            print('Connected by', addr)
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                lines = data.splitlines()
+                for line in lines:
+                    command = line.split(b' ', 4)
+                    if command[0] == b'inphasectl' and len(command) > 2:
+                        print("command received", command[1:])
+                        if command[1] == b'get':
+                            param = command[2].decode()
+                            if param in settings:
+                                value = settings[param]
+                                conn.send(param.encode()+b':'+str(value).encode()+b'\r\n')
+                            else:
+                                print("param", param, "not in", settings)
+                                conn.send(b'err: unknown parameter '+command[2]+b'\r\n')
+                        elif command[1] == b'set':
+                            conn.send(command[2]+b':'+command[3]+b'\r\n')
+                            if command[2] == b'distance_sensor0.start' and command[3] == b'1':
+                                conn.send(b'\r\ndistance_sensor0.start:1\r\n')
+                                send_measurements(conn)
+                                conn.send(b'\r\ndistance_sensor0.start:0\r\n')
+                        else:
+                            print("command dropped.")
+
+            conn.close()
+
+if __name__ == "__main__":
+    main()
+
