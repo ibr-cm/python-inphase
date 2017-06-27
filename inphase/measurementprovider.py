@@ -149,19 +149,25 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         return measurements
 
     def measurement_thread(self):
+        print("start measurement_thread")
+        clean_data = None
         while self.running:
-            try:
-                clean_data = self.node.data_queue.get(timeout=2)
-            except queue.Empty:
-                self.running = False
-                break
-            if clean_data is None:
-                break
-            # print("clean_data", clean_data)
-            measurements = self.process_data_stream(clean_data)
-            self.node.data_queue.task_done()
-            with self.measurements_lock:
-                self.measurements += measurements
+            if self.node.measuring:
+                try:
+                    clean_data = self.node.data_queue.get(timeout=2)
+                except queue.Empty:
+                    print("Empty Queue")
+                    self.running = False
+                    break
+
+                if clean_data is None:
+                    break
+
+                measurements = self.process_data_stream(clean_data)
+                self.node.data_queue.task_done()
+                with self.measurements_lock:
+                    self.measurements += measurements
+        print("stop measurement_thread")
 
     def getMeasurements(self):
         self.write_cfg(target=self.target, count=self.count)
