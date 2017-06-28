@@ -109,7 +109,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         Args:
             target (int, optional): Address of node to do measurements with.
             count (int,optional): Number of measurements to do.
-        
+
         Raises:
             ValueError: If value on node does not match setted.
         """
@@ -133,10 +133,10 @@ class InphasectlMeasurementProvider(MeasurementProvider):
 
     def process_data_stream(self, data):
         """ Process read datastream and extract measurements from binary data
-        
+
         Args:
             data (str): datastream to process
-            
+
         Returns:
             measurements (list): List of measurements extracted
         """
