@@ -16,7 +16,7 @@ settings['distance_sensor0.output'] = 2
 settings['distance_sensor0.start'] = 0
 settings['distance_sensor0.target'] = 0xdb98
 
-#TODO add the pmu parameters
+# TODO add the pmu parameters
 # .max_freq = 2600,
 # .num_frequencies = 100};
 # .num_samples = 10,
@@ -28,6 +28,7 @@ def send_measurements(conn):
         print("sending file")
         conn.send(f.read())
         print("end of file")
+
 
 def main():
     with socket.socket() as s:
@@ -46,18 +47,26 @@ def main():
                     command = line.split(b' ', 4)
                     if command[0] == b'inphasectl' and len(command) > 2:
                         print("command received", command[1:])
+                        param = command[2].decode()
                         if command[1] == b'get':
-                            param = command[2].decode()
                             if param in settings:
                                 value = settings[param]
-                                conn.send(param.encode()+b':'+str(value).encode()+b'\r\n')
+                                conn.send(
+                                    param.encode()+b':'+str(value).encode()+b'\r\n')
                             else:
                                 print("param", param, "not in", settings)
-                                conn.send(b'err: unknown parameter '+command[2]+b'\r\n')
+                                conn.send(
+                                    b'err: unknown parameter '+command[2]+b'\r\n')
                         elif command[1] == b'set':
-                            conn.send(command[2]+b':'+command[3]+b'\r\n')
-                            if command[2] == b'distance_sensor0.start' and command[3] == b'1':
-                                conn.send(b'\r\ndistance_sensor0.start:1\r\n')
+                            value = command[3]
+                            try:
+                                settings[param] = int(value.decode())
+                            except ValueError:
+                                settings[param] = value.decode()
+                            conn.send(
+                                param.encode()+b':'+str(settings[param]).encode()+b'\r\n')
+                            print("param", param, "value", value)
+                            if param == 'distance_sensor0.start' and settings[param] == 1:
                                 send_measurements(conn)
                                 conn.send(b'\r\ndistance_sensor0.start:0\r\n')
                         else:
@@ -67,4 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
