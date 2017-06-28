@@ -58,56 +58,62 @@ class inphasectl():
             self.logger.info("socket mode address", address, "port", port)
         else:
             raise Exception("Neither serial_port nor address set")
+        try:
+            self.ser = serial.serial_for_url(self.serial_port, self.baudrate, timeout=0)
+        except serial.serialutil.SerialException:
+            self.logger.error('ERROR: serial port %s not available' % (self.serial_port))
+            self.running = False
 
         self.child_thread.start()
+
 
     def disconnect(self):
         """Disconnect from device."""
         self.running = False
+        self.child_thread.join()
 
     def get_param(self, param):
-        """Get parameter from device.
-        
-        Args:
-            param (str): Name of parameter to get
-        """
-
-        if param in self.read_parameters:
-            return self.read_parameters[param]
-        else:
-            self.__get_param(param)
-            return None
-
-    def get_param_block(self, param):
         """Get parameter from device. This blocks until the request
         parameter is received.
 
         Note:
-            This may hang forever!
-        
+            This aborts after approx. 10 sec
+
         Args:
             param (str): Name of parameter to get
         """
+        self.read_parameters[param] = None
+        self.logger.info("deleted saved parameter")
+        self.__get_param(param)
+        counter = 0
+        while self.read_parameters[param] == None:
+            if counter == 10:
+                raise Exception("Device does not answer")
+            counter += 1
+            time.sleep(1)
 
-        if param not in self.read_parameters:
-            self.__get_param(param)
-        while param not in self.read_parameters:
-            time.sleep(0.5)
-            self.logger.info("retry")
-        value = self.read_parameters[param]
-        return value
+        return self.read_parameters[param]
 
     def __get_param(self, param):
         self.logger.info("Getting parameter '%s' " % param)
         self.send_cmd('get %s' % param)
 
     def set_param(self, param, value):
-        if self.read_parameters.pop(param, None) is not None:
-            self.logger.info("deleted saved parameter")
+        self.read_parameters[param] = None
+        self.logger.info("deleted saved parameter")
         self.logger.info("Setting '%s' to value '%s'" % (param, value))
         self.send_cmd('set %s %s' % (param, value))
+        counter = 0
+        while self.read_parameters[param] == None:
+            if counter == 10:
+                raise Exception("Device does not answer")
+            counter += 1
+            time.sleep(1)
+
+        return self.read_parameters[param] == value
 
     def start(self):
+        self.set_param('distance_sensor0.start', 1)
         self.single_query = False
         self.measuring = True
 
@@ -145,40 +151,34 @@ class inphasectl():
 
     def serial_thread(self):
         # serial_for_url() allows more fancy usage of this class
-        try:
-            with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
-                self.running = True
-                self.logger.info("serial_thread started")
-                while self.running:
-                    avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
-                    with self.received_data_lock:
-                        self.received_data = self.ser.read(1000)
-                        decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + self.received_data)
-                        self.read_parameters.update(decoded_parameters)
-                        self.clean += clean
-                        self.logger.debug("clean %s" % clean)
-                        if clean != b'':
-                            self.data_queue.put(clean)
+        self.running = True
+        self.logger.info("serial_thread started")
+        while self.running:
+            avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
+            self.received_data = self.ser.read(1000)
 
-                    if self.remaining_padec == b'':
-                        if 'distance_sensor0.start' not in self.read_parameters:
-                            self.get_param('distance_sensor0.start')
-                        elif self.read_parameters['distance_sensor0.start'] ==  None:
-                            self.logger.debug("waiting for start state")
-                        elif self.read_parameters['distance_sensor0.start'] ==  0:
-                            self.logger.debug("inphasectl not active")
-                            if self.active:
-                                self.measuring = False
-                                self.logger.info("measurements done")
-                            elif self.measuring:
-                                self.set_param('distance_sensor0.start', 1)
-                        elif self.read_parameters['distance_sensor0.start'] ==  1:
-                            self.logger.debug("inphasectl active")
-                            self.active = True
-                # TODO: maybe delete read_parameters here, becaue we will be out of sync
-                self.logger.info("serial_thread stopped")
+            decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + self.received_data)
+            self.read_parameters.update(decoded_parameters)
+            self.logger.debug("clean %s" % clean)
+            if clean != b'':
+                self.data_queue.put(clean)
 
-        except serial.serialutil.SerialException:
-            self.logger.error('ERROR: serial port %s not available' % (self.serial_port))
-            self.running = False
+            # if not self.active:
+                # if 'distance_sensor0.start' not in self.read_parameters:
+                    # self.get_param('distance_sensor0.start')
+            # elif self.read_parameters['distance_sensor0.start'] ==  None:
+                # self.logger.debug("waiting for start state")
+            # elif self.read_parameters['distance_sensor0.start'] ==  0:
+                # self.logger.debug("inphasectl not active")
+                # if self.active:
+                    # self.measuring = False
+                    # self.logger.info("measurements done")
+                # elif self.measuring:
+                    # self.set_param('distance_sensor0.start', 1)
+            # elif self.read_parameters['distance_sensor0.start'] ==  1:
+                # self.logger.debug("inphasectl active")
+                # self.active = True
+        # TODO: maybe delete read_parameters here, becaue we will be out of sync
+        self.logger.info("serial_thread stopped")
+        self.ser.close()
 
