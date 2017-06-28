@@ -73,7 +73,13 @@ class SerialMeasurementProvider(MeasurementProvider):
         with serial.serial_for_url(self.serial_port, self.baudrate, timeout=0) as self.ser:
             while self.running:
                 avail_read, avail_write, avail_error = select.select([self.ser], [], [], 1)
-                ser_data = self.ser.read(1000)
+                try:
+                    ser_data = self.ser.read(1000)
+                except serial.serialutil.SerialException:
+                    print("Serial Device unavailable")
+                    self.running = False
+                    continue
+
                 measurements, self.remaining, clean = decodeBinary(self.remaining + ser_data)
                 with self.measurements_lock:
                     self.measurements += measurements
