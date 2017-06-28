@@ -3,6 +3,7 @@
 
 from inphase import Experiment
 from inphase.measurementprovider import *
+from . import inphasectl_mockup
 
 import unittest
 import time
@@ -56,6 +57,7 @@ class UnitTest(unittest.TestCase):
         serial_sock.close()
 
     def test_InphasectlMeasurementProvider(self):
+        threading.Thread(target=inphasectl_mockup.main).start()
         self.provider = InphasectlMeasurementProvider('socket://localhost:50005', count=3, target=0xdb98)
         time.sleep(2)  # wait for some measurements to arrive
         measurements = self.provider.getMeasurements()
