@@ -3,10 +3,13 @@
 
 import socket
 import os
+import logging
 
 HOST = 'localhost'
 PORT = 50005
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
+logger = logging.getLogger(__name__)
 
 settings = dict()
 settings['distance_sensor0.allow_ranging'] = 1
@@ -26,9 +29,9 @@ settings['default.version'] = 'inphasectl-mockup'
 
 def send_measurements(conn):
     with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
-        print("sending file")
+        logger.info("sending file")
         conn.send(f.read())
-        print("end of file")
+        logger.info("end of file")
 
 
 def main():
@@ -38,7 +41,7 @@ def main():
         s.listen(1)
         conn, addr = s.accept()
         with conn:
-            print('Connected by', addr)
+            logger.info('Connected by', addr)
             while True:
                 data = conn.recv(1024)
                 if not data:
@@ -47,7 +50,7 @@ def main():
                 for line in lines:
                     command = line.split(b' ', 4)
                     if command[0] == b'inphasectl' and len(command) > 2:
-                        print("command received", command[1:])
+                        logger.info("command received", command[1:])
                         param = command[2].decode()
                         if command[1] == b'get':
                             if param in settings:
@@ -55,7 +58,7 @@ def main():
                                 conn.send(
                                     param.encode()+b':'+str(value).encode()+b'\r\n')
                             else:
-                                print("param", param, "not in", settings)
+                                logger.info("param", param, "not in", settings)
                                 conn.send(
                                     b'err: unknown parameter '+command[2]+b'\r\n')
                         elif command[1] == b'set':
@@ -66,12 +69,12 @@ def main():
                                 settings[param] = value.decode()
                             conn.send(
                                 param.encode()+b':'+str(settings[param]).encode()+b'\r\n')
-                            print("param", param, "value", value)
+                            logger.info("param", param, "value", value)
                             if param == 'distance_sensor0.start' and settings[param] == 1:
                                 send_measurements(conn)
                                 conn.send(b'\r\ndistance_sensor0.start:0\r\n')
                         else:
-                            print("command dropped.")
+                            logger.info("command dropped.")
 
             conn.close()
 

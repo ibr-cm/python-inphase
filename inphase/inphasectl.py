@@ -16,8 +16,8 @@ class inphasectl():
         logger (:obj:`logging`, optional): logger to use
     """
 
-    def __init__(self, logger=None):
-        self.logger = logger or logging.getLogger(__name__)
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.running = False
         self.measuring = False
         self.active = False

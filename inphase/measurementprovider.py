@@ -103,8 +103,8 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         self.measurements = list()
         self.measurements_lock = threading.Lock()
         self.running = True
-        logger = logging.getLogger('inphase.inphasectl')
-        self.node = inphasectl(logger=logger)
+        self.logger = logging.getLogger(__name__)
+        self.node = inphasectl()
         self.node.connect(serial_port, baudrate, address, port)
         self.child_thread = threading.Thread(target=self.measurement_thread)
         self.child_thread.start()
@@ -134,7 +134,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             self.node.set_param(parameter_to_set, value_to_set)
             parameter_read = self.node.get_param_block(parameter_to_set)
             if parameter_read != value_to_set:
-                print("parameter_read", parameter_read, "value_to_set", value_to_set)
+                self.logger.debug("parameter_read", parameter_read, "value_to_set", value_to_set)
                 raise ValueError("Setting parameter failed %s", parameter_to_set)
 
     def process_data_stream(self, data):
@@ -147,22 +147,22 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             measurements (list): List of measurements extracted
         """
 
-        # print("datastream: {}".format(data))
+        self.logger.debug("datastream: {}".format(data))
         measurements, self.remaining, clean = decodeBinary(self.remaining + data)
-        # print("bindec -> remaining: {}".format(self.remaining))
-        # print("bindec -> len measurements: {}".format(len(measurements)))
-        # print("bindec -> clean: {}".format(clean))
+        self.logger.debug("bindec -> remaining: {}".format(self.remaining))
+        self.logger.debug("bindec -> len measurements: {}".format(len(measurements)))
+        self.logger.debug("bindec -> clean: {}".format(clean))
         return measurements
 
     def measurement_thread(self):
-        print("start measurement_thread")
+        self.logger.info("start measurement_thread")
         clean_data = None
         while self.running:
             if self.node.measuring:
                 try:
                     clean_data = self.node.data_queue.get(timeout=2)
                 except queue.Empty:
-                    print("Empty Queue")
+                    self.logger.debug("Empty Queue")
                     self.running = False
                     break
 
@@ -173,16 +173,16 @@ class InphasectlMeasurementProvider(MeasurementProvider):
                 self.node.data_queue.task_done()
                 with self.measurements_lock:
                     self.measurements += measurements
-        print("stop measurement_thread")
+        self.logger.info("stop measurement_thread")
 
     def getMeasurements(self):
         self.write_cfg(target=self.target, count=self.count)
-        print("measurements start")
+        self.logger.info("measurements start")
         self.node.start()
         while self.node.measuring:
-            # print("waiting measuring %s running %s" % (self.measuring, self.running))
+            # self.logger.info("waiting measuring %s running %s" % (self.measuring, self.running))
             time.sleep(2.0)
-        print("measurements done")
+        self.logger.info("measurements done")
         with self.measurements_lock:
             measurements = self.measurements
             self.measurements = list()  # use a new list, to not return the last measurements again
@@ -190,7 +190,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         return measurements
 
     def close(self):
-        print("closing")
+        self.logger.info("closing")
         self.node.disconnect()
         self.running = False
 

@@ -3,13 +3,7 @@ import time
 import re
 import logging
 
-logger = logging.getLogger()
-
-try:
-    import coloredlogs
-    coloredlogs.install(level='ERROR', logger=logger, fmt="%(levelname)s %(message)s")
-except ImportError:
-    logger.info("Module coloredlogs not found, using default logging")
+logger = logging.getLogger(__name__)
 
 REGEX_KEYVALUE = r"^(\s*)(?P<key>(?:\w+\.){0,}(?:\w+))(?P<sep>:\s*)(?P<value>[\S ]*)"
 
