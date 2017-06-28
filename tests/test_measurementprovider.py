@@ -55,9 +55,8 @@ class UnitTest(unittest.TestCase):
         conn.close()
         serial_sock.close()
 
-    @unittest.skip("TODO: unit to test needs implementation")
     def test_InphasectlMeasurementProvider(self):
-        self.provider = InphasectlMeasurementProvider('/dev/ttyUSB0', count=3, target=0xdb98)
+        self.provider = InphasectlMeasurementProvider('socket://localhost:50005', count=3, target=0xdb98)
         time.sleep(2)  # wait for some measurements to arrive
         measurements = self.provider.getMeasurements()
         self.provider.close()
