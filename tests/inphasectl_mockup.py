@@ -41,7 +41,7 @@ def main():
         s.listen(1)
         conn, addr = s.accept()
         with conn:
-            logger.info('Connected by', addr)
+            logger.info('Connected by %s', addr)
             while True:
                 data = conn.recv(1024)
                 if not data:
@@ -50,26 +50,23 @@ def main():
                 for line in lines:
                     command = line.split(b' ', 4)
                     if command[0] == b'inphasectl' and len(command) > 2:
-                        logger.info("command received", command[1:])
+                        logger.info("command received %s", command[1:])
                         param = command[2].decode()
                         if command[1] == b'get':
                             if param in settings:
                                 value = settings[param]
-                                conn.send(
-                                    param.encode()+b':'+str(value).encode()+b'\r\n')
+                                conn.send(param.encode()+b':'+str(value).encode()+b'\r\n')
                             else:
-                                logger.info("param", param, "not in", settings)
-                                conn.send(
-                                    b'err: unknown parameter '+command[2]+b'\r\n')
+                                logger.info("param %s not in %s", param, settings)
+                                conn.send(b'err: unknown parameter '+command[2]+b'\r\n')
                         elif command[1] == b'set':
                             value = command[3]
                             try:
                                 settings[param] = int(value.decode())
                             except ValueError:
                                 settings[param] = value.decode()
-                            conn.send(
-                                param.encode()+b':'+str(settings[param]).encode()+b'\r\n')
-                            logger.info("param", param, "value", value)
+                            conn.send(param.encode()+b':'+str(settings[param]).encode()+b'\r\n')
+                            logger.debug("param %s value %s", param, value)
                             if param == 'distance_sensor0.start' and settings[param] == 1:
                                 send_measurements(conn)
                                 conn.send(b'\r\ndistance_sensor0.start:0\r\n')
@@ -79,4 +76,18 @@ def main():
             conn.close()
 
 if __name__ == "__main__":
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    # create formatter
+    # TODO: use CONSTANT from inphase module
+    formatter = logging.Formatter('%(name)s/%(funcName)s (%(threadName)s) - %(levelname)s - %(message)s')
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to logger
+    logger.addHandler(ch)
+
     main()
