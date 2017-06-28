@@ -15,6 +15,7 @@ settings['distance_sensor0.initiator'] = 0xc39f
 settings['distance_sensor0.output'] = 2
 settings['distance_sensor0.start'] = 0
 settings['distance_sensor0.target'] = 0xdb98
+settings['default.version'] = 'inphasectl-mockup'
 
 # TODO add the pmu parameters
 # .max_freq = 2600,
