@@ -34,15 +34,15 @@ class inphasectl():
     def connect(self, serial_port=None, baudrate=38400, address=None, port=50000):
         """
         Try to connect to device. This could be done either via serial_port
-        or socket connection. 
-        
+        or socket connection.
+
         Args:
             serial_port (str, optional): Device path to use, e.g. `/dev/ttyUSB0`
             baudrate (int, optional): Baudrate to use
             address (str, optional): Use this address for socket mode
             port (int, optional): Port to use
 
-        Note: 
+        Note:
             At least one arguments must be given of `serial_port` or `address`
         """
 
