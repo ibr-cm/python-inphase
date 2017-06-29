@@ -29,11 +29,14 @@ settings['default.version'] = 'inphasectl-mockup'
 # .start_freq = 2400,
 
 
-def send_measurements(conn):
-    with open(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), 'rb') as f:
-        logger.info("sending file")
-        conn.send(f.read())
-        logger.info("end of file")
+def send_measurements(conn, number_of_measurements):
+    with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_bindata_only.bin'), 'rb') as f:
+        logger.info("Sending measurements from file")
+        measurement_data = f.read()
+        for counter in range(number_of_measurements):
+            logger.info("Measurement #%d", counter)
+            conn.send(measurement_data)
+        logger.info("Sending done")
 
 
 def main():
