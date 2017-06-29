@@ -148,7 +148,6 @@ class InphasectlMeasurementProvider(MeasurementProvider):
             measurements (list): List of measurements extracted
         """
 
-        self.logger.debug("datastream: {}".format(data))
         measurements, self.remaining, clean = decodeBinary(self.remaining + data)
         self.logger.debug("bindec -> remaining: {}".format(self.remaining))
         self.logger.debug("bindec -> len measurements: {}".format(len(measurements)))
