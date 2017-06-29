@@ -2,6 +2,9 @@ from inphase.dataformat import Measurement, Node, Sample
 
 from struct import unpack, calcsize
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 # as defined in at86rf233.c
 SERIAL_FRAME_START     = 0x3C      # "<" in ascii
@@ -52,7 +55,7 @@ def decodeBinary(data, timestamp=True):
 
         if len(raw_frame) == 2:
             # we have found an empty frame
-            print("frame invalid! no data between start and stop symbol.")
+            logger.error("frame invalid! no data between start and stop symbol.")
             clean_data += raw_frame
             continue
 
@@ -124,7 +127,7 @@ def _parsePacket(frame):
     minimum_frame_length = calcsize(unpack_str)+calcsize(unpack_str_2)
 
     if len(frame) < minimum_frame_length:
-        print("frame invalid! length was:", len(frame), ", minimum length is:", minimum_frame_length)
+        logger.error("frame invalid! length was: %d, minimum length is: %d", len(frame), minimum_frame_length)
         return None
 
     samples, step = unpack(unpack_str, frame[0:calcsize(unpack_str)])
@@ -136,7 +139,7 @@ def _parsePacket(frame):
     expected_frame_length = measurements * samples + minimum_frame_length
 
     if (expected_frame_length != len(frame)):
-        print("frame invalid! length was:", len(frame), ", expected length is:", expected_frame_length)
+        logger.error("frame invalid! length was: %d, expected length is: %d", len(frame), expected_frame_length)
         return None
 
     data['measurements'] = measurements
@@ -148,7 +151,7 @@ def _parsePacket(frame):
     data['dist_quality'] = dist_quality
     data['status'] = status
 
-    #print data
+    logger.debug(data)
 
     data['frequencies'] = list()
 

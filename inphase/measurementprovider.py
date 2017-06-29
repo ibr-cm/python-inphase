@@ -65,6 +65,7 @@ class SerialMeasurementProvider(MeasurementProvider):
         self.measurements = list()
         self.measurements_lock = threading.Lock()
         self.running = True
+        self.logger = logging.getLogger(__name__)
         self.child_thread = threading.Thread(target=self.serial_thread)
         self.child_thread.start()
 
@@ -76,7 +77,7 @@ class SerialMeasurementProvider(MeasurementProvider):
                 try:
                     ser_data = self.ser.read(1000)
                 except serial.serialutil.SerialException:
-                    print("Serial Device unavailable")
+                    self.logger.error("Serial Device unavailable")
                     self.running = False
                     continue
 

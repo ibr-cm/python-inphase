@@ -26,7 +26,11 @@ class UnitTest(unittest.TestCase):
         with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_clean.txt'), 'rb') as f:
             output_data = f.read()
 
-        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        with self.assertLogs('inphase.binarydecoder', level='ERROR') as cm:
+            measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        self.assertEqual(cm.output, [
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 83, expected length is: 350960'
+            ])
 
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
@@ -43,7 +47,14 @@ class UnitTest(unittest.TestCase):
         with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_commands.txt'), 'rb') as f:
             input_data = f.read()
 
-        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        with self.assertLogs('inphase.binarydecoder', level='ERROR') as cm:
+            measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        self.assertEqual(cm.output, [
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 3, minimum length is: 12',
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 7, minimum length is: 12',
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 3, minimum length is: 12',
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 7, minimum length is: 12'
+            ])
 
         self.assertEqual(len(measurements), 0)
         self.assertEqual(clean_data, input_data)
@@ -54,7 +65,11 @@ class UnitTest(unittest.TestCase):
         with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_broken_clean.txt'), 'rb') as f:
             output_data = f.read()
 
-        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        with self.assertLogs('inphase.binarydecoder', level='ERROR') as cm:
+            measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+        self.assertEqual(cm.output, [
+            'ERROR:inphase.binarydecoder:frame invalid! length was: 83, expected length is: 350960'
+            ])
 
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
@@ -69,7 +84,11 @@ class UnitTest(unittest.TestCase):
 
     def test_invalid_frame(self):
         test_data = b'<>'
-        measurements, remaining_data, clean = inphase.decodeBinary(test_data)
+        with self.assertLogs('inphase.binarydecoder', level='ERROR') as cm:
+            measurements, remaining_data, clean = inphase.decodeBinary(test_data)
+        self.assertEqual(cm.output, [
+            'ERROR:inphase.binarydecoder:frame invalid! no data between start and stop symbol.'
+            ])
         self.assertEqual(len(measurements), 0)
         self.assertEqual(clean, test_data)
         self.assertEqual(len(remaining_data), 0)
