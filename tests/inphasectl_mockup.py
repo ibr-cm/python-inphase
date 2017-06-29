@@ -81,6 +81,11 @@ def main():
                                 if param == 'distance_sensor0.start' and settings[param] == 1:
                                     send_measurements(conn, settings['distance_sensor0.count'])
                                     conn.send(b'\r\ndistance_sensor0.start:0\r\n')
+                            elif command[1] == b'list-devices':
+                                send_list(conn, devices)
+                            elif command[1] == b'list-parameters':
+                                # TODO get device if set in command
+                                send_list(conn, devices)
                             else:
                                 logger.info("command dropped.")
             logger.info('Connection closed by %s', addr)
