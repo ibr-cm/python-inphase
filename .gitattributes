@@ -1,3 +1,2 @@
 tests/testdata/serial_data/inphasectl_single_shot_clean.txt eol=crlf
 tests/testdata/serial_data/inphasectl_single_shot_broken_clean.txt eol=crlf
-tests/testdata/serial_data/inphasectl_single_shot_bindata_only.bin eol=crlf
