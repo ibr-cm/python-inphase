@@ -160,8 +160,8 @@ class inphasectl():
 
             decoded_parameters, self.remaining_padec, clean = decodeParameters(self.remaining_padec + self.received_data)
             self.read_parameters.update(decoded_parameters)
-            self.logger.debug("clean %s" % clean)
             if clean != b'':
+                self.logger.debug("put clean in queue: %s" % clean)
                 self.data_queue.put(clean)
 
         # TODO: maybe delete read_parameters here, becaue we will be out of sync
