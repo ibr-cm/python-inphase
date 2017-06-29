@@ -106,8 +106,12 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         self.logger = logging.getLogger(__name__)
         self.node = inphasectl()
         self.node.connect(serial_port, baudrate, address, port)
-        self.child_thread = threading.Thread(target=self.measurement_thread)
-        self.child_thread.start()
+        if self.node.running:
+            self.child_thread = threading.Thread(target=self.measurement_thread)
+            self.child_thread.start()
+            self.write_cfg(target=self.target, count=self.count)
+        else:
+            raise Exception("No connection to node")
 
     def write_cfg(self, target, count):
         """ Write settings to node and read back.
