@@ -31,6 +31,14 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
 
+    def test_only_bin_data(self):
+        with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_bindata_only.bin'), 'rb') as f:
+            input_data = f.read()
+        measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
+
+        self.assertEqual(len(measurements), 1)
+        self.assertEqual(clean_data, b'')
+
     def test_cmd_output(self):
         with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_commands.txt'), 'rb') as f:
             input_data = f.read()

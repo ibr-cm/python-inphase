@@ -3,6 +3,7 @@
 
 from inphase import Experiment
 from inphase.measurementprovider import *
+from . import inphasectl_mockup
 
 import unittest
 import time
@@ -10,6 +11,20 @@ import socket
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+import logging
+import sys
+
+logger = logging.getLogger()
+logger.level = logging.ERROR
+formatter = logging.Formatter('%(name)s/%(funcName)s (%(threadName)s) - %(levelname)s - %(message)s')
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
+logging.getLogger('inphase.parameterdecoder').setLevel(logging.ERROR)
+logging.getLogger('inphase.inphasectl').setLevel(logging.ERROR)
+logging.getLogger('tests.inphasectl_mockup').setLevel(logging.ERROR)
+logging.getLogger('inphase.measurementprovider').setLevel(logging.ERROR)
 
 class UnitTest(unittest.TestCase):
 
@@ -54,6 +69,22 @@ class UnitTest(unittest.TestCase):
 
         conn.close()
         serial_sock.close()
+
+    def test_InphasectlMeasurementProvider(self):
+        thread = threading.Thread(target=inphasectl_mockup.main)
+        thread.start()
+        time.sleep(1)  # wait for thread to be ready
+        self.p = InphasectlMeasurementProvider('socket://localhost:50005', count=4, target=0xdb98)
+        time.sleep(1)  # wait for some measurements to arrive
+        measurements = self.p.getMeasurements()
+        self.assertEqual(len(measurements), 4)
+
+    @unittest.skip("Test can't be run on CI")
+    def test_InphasectlMeasurementProviderWithDevice(self):
+        self.p = InphasectlMeasurementProvider('/dev/inga/node-A501I3NS', count=4, target=0xdb98)
+        time.sleep(1)  # wait for some measurements to arrive
+        measurements = self.p.getMeasurements()
+        self.assertEqual(len(measurements), 4)
 
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)

@@ -1,5 +1,7 @@
 from inphase import Experiment
 from inphase import decodeBinary
+from inphase import decodeParameters
+from inphase.inphasectl import inphasectl
 
 import time
 import math
@@ -7,7 +9,8 @@ import serial
 import select
 import threading
 import socket
-
+import logging
+import queue
 
 class MeasurementProvider:
 
@@ -90,6 +93,109 @@ class SerialMeasurementProvider(MeasurementProvider):
 
     def close(self):
         self.running = False
+
+class InphasectlMeasurementProvider(MeasurementProvider):
+    """ A MeasurementProvider using inphasectl to setup node and get measurements on demand."""
+    def __init__(self, serial_port=None, baudrate=38400, address=None, port=50000, count=3, target=None):
+        self.count = count
+        self.target = target
+        self.remaining = bytes()
+        self.measurements = list()
+        self.measurements_lock = threading.Lock()
+        self.measuring = False
+        self.running = True
+        self.logger = logging.getLogger(__name__)
+        self.node = inphasectl()
+        self.node.connect(serial_port, baudrate, address, port)
+        if self.node.running:
+            self.child_thread = threading.Thread(target=self.measurement_thread)
+            self.child_thread.start()
+            self.write_cfg(target=self.target, count=self.count)
+        else:
+            raise Exception("No connection to node")
+
+    def write_cfg(self, target, count):
+        """ Write settings to node and read back.
+
+        Args:
+            target (int, optional): Address of node to do measurements with.
+            count (int,optional): Number of measurements to do.
+
+        Raises:
+            ValueError: If value on node does not match setted.
+        """
+        if target == None:
+            target = self.target
+
+        if count == None:
+            count = self.count
+
+        settings = dict()
+        settings['distance_sensor0.target'] = target
+        settings['distance_sensor0.count'] = count
+
+        for parameter_to_set in settings:
+            value_to_set = settings[parameter_to_set]
+            if not self.node.set_param(parameter_to_set, value_to_set):
+                raise ValueError("Setting parameter failed %s", parameter_to_set)
+
+    def process_data_stream(self, data):
+        """ Process read datastream and extract measurements from binary data
+
+        Args:
+            data (str): datastream to process
+
+        Returns:
+            measurements (list): List of measurements extracted
+        """
+
+        measurements, self.remaining, clean = decodeBinary(self.remaining + data)
+        self.logger.debug("bindec -> remaining: {}".format(self.remaining))
+        self.logger.debug("bindec -> len measurements: {}".format(len(measurements)))
+        self.logger.debug("bindec -> clean: {}".format(clean))
+        return measurements
+
+    def measurement_thread(self):
+        self.logger.info("start measurement_thread")
+        clean_data = None
+        while self.running:
+            try:
+                data_to_process = self.node.data_queue.get(timeout=0.5)
+                self.logger.debug("new data_to_process len %d", len(data_to_process))
+                self.measuring = True
+                measurements = self.process_data_stream(data_to_process)
+                self.node.data_queue.task_done()
+                with self.measurements_lock:
+                    self.measurements += measurements
+            except queue.Empty:
+                self.logger.debug("Timeout on waiting for data")
+                if 'distance_sensor0.start' in self.node.read_parameters:
+                    start = self.node.read_parameters['distance_sensor0.start']
+                    self.logger.debug("start is %s", start)
+                    if start == 0:
+                        self.measuring = False
+
+        self.logger.info("stop measurement_thread")
+
+    def getMeasurements(self):
+        self.logger.info("measurements start")
+        self.node.start()
+        self.measuring = True
+        while self.measuring:
+            self.logger.info("waiting measuring %s running %s" % (self.measuring, self.running))
+            time.sleep(0.5)
+        self.logger.info("measurements done")
+        with self.measurements_lock:
+            measurements = self.measurements
+            self.measurements = list()  # use a new list, to not return the last measurements again
+        self.logger.info("requested %d received %d", self.count, len(measurements))
+
+        return measurements
+
+    def close(self):
+        self.logger.info("closing")
+        self.running = False
+        self.node.disconnect()
 
 
 class BinaryFileMeasurementProvider(ConstantRateMeasurementProvider):
