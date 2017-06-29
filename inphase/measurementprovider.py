@@ -135,10 +135,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
 
         for parameter_to_set in settings:
             value_to_set = settings[parameter_to_set]
-            self.node.set_param(parameter_to_set, value_to_set)
-            parameter_read = self.node.get_param_block(parameter_to_set)
-            if parameter_read != value_to_set:
-                self.logger.debug("parameter_read", parameter_read, "value_to_set", value_to_set)
+            if not self.node.set_param(parameter_to_set, value_to_set):
                 raise ValueError("Setting parameter failed %s", parameter_to_set)
 
     def process_data_stream(self, data):
