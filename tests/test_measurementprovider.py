@@ -11,6 +11,20 @@ import socket
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+import logging
+import sys
+
+logger = logging.getLogger()
+logger.level = logging.ERROR
+formatter = logging.Formatter('%(name)s/%(funcName)s (%(threadName)s) - %(levelname)s - %(message)s')
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
+logging.getLogger('inphase.parameterdecoder').setLevel(logging.ERROR)
+logging.getLogger('inphase.inphasectl').setLevel(logging.ERROR)
+logging.getLogger('tests.inphasectl_mockup').setLevel(logging.ERROR)
+logging.getLogger('inphase.measurementprovider').setLevel(logging.ERROR)
 
 class UnitTest(unittest.TestCase):
 
