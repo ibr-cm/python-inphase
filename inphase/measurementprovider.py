@@ -102,6 +102,7 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         self.remaining = bytes()
         self.measurements = list()
         self.measurements_lock = threading.Lock()
+        self.measuring = False
         self.running = True
         self.logger = logging.getLogger(__name__)
         self.node = inphasectl()
@@ -158,41 +159,43 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         self.logger.info("start measurement_thread")
         clean_data = None
         while self.running:
-            if self.node.measuring:
-                try:
-                    clean_data = self.node.data_queue.get(timeout=2)
-                except queue.Empty:
-                    self.logger.debug("Empty Queue")
-                    self.running = False
-                    break
-
-                if clean_data is None:
-                    break
-
-                measurements = self.process_data_stream(clean_data)
+            try:
+                data_to_process = self.node.data_queue.get(timeout=0.5)
+                self.logger.debug("new data_to_process len %d", len(data_to_process))
+                self.measuring = True
+                measurements = self.process_data_stream(data_to_process)
                 self.node.data_queue.task_done()
                 with self.measurements_lock:
                     self.measurements += measurements
+            except queue.Empty:
+                self.logger.debug("Timeout on waiting for data")
+                if 'distance_sensor0.start' in self.node.read_parameters:
+                    start = self.node.read_parameters['distance_sensor0.start']
+                    self.logger.debug("start is %s", start)
+                    if start == 0:
+                        self.measuring = False
+
         self.logger.info("stop measurement_thread")
 
     def getMeasurements(self):
-        self.write_cfg(target=self.target, count=self.count)
         self.logger.info("measurements start")
         self.node.start()
-        while self.node.measuring:
-            # self.logger.info("waiting measuring %s running %s" % (self.measuring, self.running))
-            time.sleep(2.0)
+        self.measuring = True
+        while self.measuring:
+            self.logger.info("waiting measuring %s running %s" % (self.measuring, self.running))
+            time.sleep(0.5)
         self.logger.info("measurements done")
         with self.measurements_lock:
             measurements = self.measurements
             self.measurements = list()  # use a new list, to not return the last measurements again
+        self.logger.info("requested %d received %d", self.count, len(measurements))
 
         return measurements
 
     def close(self):
         self.logger.info("closing")
-        self.node.disconnect()
         self.running = False
+        self.node.disconnect()
 
 
 class BinaryFileMeasurementProvider(ConstantRateMeasurementProvider):
