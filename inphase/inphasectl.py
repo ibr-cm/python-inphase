@@ -91,7 +91,7 @@ class inphasectl():
             if counter == 10:
                 raise Exception("Device does not answer")
             counter += 1
-            time.sleep(1)
+            time.sleep(0.5)
 
         return self.read_parameters[param]
 
@@ -109,7 +109,7 @@ class inphasectl():
             if counter == 10:
                 raise Exception("Device does not answer")
             counter += 1
-            time.sleep(1)
+            time.sleep(0.5)
 
         return self.read_parameters[param] == value
 
