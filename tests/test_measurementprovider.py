@@ -71,12 +71,20 @@ class UnitTest(unittest.TestCase):
         serial_sock.close()
 
     def test_InphasectlMeasurementProvider(self):
-        threading.Thread(target=inphasectl_mockup.main).start()
-        self.provider = InphasectlMeasurementProvider('socket://localhost:50005', count=3, target=0xdb98)
-        time.sleep(2)  # wait for some measurements to arrive
-        measurements = self.provider.getMeasurements()
-        self.provider.close()
-        self.assertGreaterEqual(len(measurements), 1)
+        thread = threading.Thread(target=inphasectl_mockup.main)
+        thread.start()
+        time.sleep(1)  # wait for thread to be ready
+        self.p = InphasectlMeasurementProvider('socket://localhost:50005', count=4, target=0xdb98)
+        time.sleep(1)  # wait for some measurements to arrive
+        measurements = self.p.getMeasurements()
+        self.assertEqual(len(measurements), 4)
+
+    @unittest.skip("Test can't be run on CI")
+    def test_InphasectlMeasurementProviderWithDevice(self):
+        self.p = InphasectlMeasurementProvider('/dev/inga/node-A501I3NS', count=4, target=0xdb98)
+        time.sleep(1)  # wait for some measurements to arrive
+        measurements = self.p.getMeasurements()
+        self.assertEqual(len(measurements), 4)
 
     def test_BinaryFileMeasurementProvider(self):
         self.p = BinaryFileMeasurementProvider(os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), output_rate=10000, loop=False)
