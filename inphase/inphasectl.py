@@ -28,7 +28,7 @@ class inphasectl():
         self.read_parameters = dict()
         self.remaining_padec = bytearray()
         self.single_query = False
-        self.data_queue = queue.Queue() 
+        self.data_queue = queue.Queue()
         self.logger.info("init done")
 
     def connect(self, serial_port=None, baudrate=38400, address=None, port=50000):
@@ -164,21 +164,6 @@ class inphasectl():
             if clean != b'':
                 self.data_queue.put(clean)
 
-            # if not self.active:
-                # if 'distance_sensor0.start' not in self.read_parameters:
-                    # self.get_param('distance_sensor0.start')
-            # elif self.read_parameters['distance_sensor0.start'] ==  None:
-                # self.logger.debug("waiting for start state")
-            # elif self.read_parameters['distance_sensor0.start'] ==  0:
-                # self.logger.debug("inphasectl not active")
-                # if self.active:
-                    # self.measuring = False
-                    # self.logger.info("measurements done")
-                # elif self.measuring:
-                    # self.set_param('distance_sensor0.start', 1)
-            # elif self.read_parameters['distance_sensor0.start'] ==  1:
-                # self.logger.debug("inphasectl active")
-                # self.active = True
         # TODO: maybe delete read_parameters here, becaue we will be out of sync
         self.logger.info("serial_thread stopped")
         self.ser.close()
