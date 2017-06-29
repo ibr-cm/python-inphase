@@ -63,8 +63,9 @@ class inphasectl():
         except serial.serialutil.SerialException:
             self.logger.error('ERROR: serial port %s not available' % (self.serial_port))
             self.running = False
-
-        self.child_thread.start()
+        else:
+            self.logger.info("Starting child thread")
+            self.child_thread.start()
 
 
     def disconnect(self):
