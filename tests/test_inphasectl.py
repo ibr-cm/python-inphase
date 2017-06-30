@@ -1,10 +1,11 @@
-from inphase.inphasectl import inphasectl
-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import time
 import unittest
 import logging
 import threading
 
+from inphase.inphasectl import inphasectl
 from tests import inphasectl_mockup
 
 
@@ -32,6 +33,19 @@ class TestInphasectlNode(unittest.TestCase):
 
         self.assertFalse(self.node.running)
         self.node.connect(serial_port=self.DEVICE_URL, baudrate=self.BAUDRATE)
+
+    def tearDown(self):
+        '''
+        Disconnect from device.
+        '''
+        self.node.disconnect()
+        self.assertFalse(self.node.running)
+
+    def test_connected(self):
+        '''
+        Test whether connecting in setup was successful.
+        '''
+        self.logger.info(">> test_connect_serial")
         counter = 0
         while not self.node.running:
             counter += 1
@@ -41,17 +55,32 @@ class TestInphasectlNode(unittest.TestCase):
         self.assertTrue(self.node.running)
 
     def test_set_param(self):
+        '''
+        Test whether setting parameters generally works.
+
+        Note:
+            Only setting 'distance_sensor0.target' to '0x1337' is tested.
+        '''
         self.logger.info(">> test_set_param")
         self.assertTrue(self.node.running)
         self.assertTrue(self.node.set_param('distance_sensor0.target', 0x1337))
 
     def test_get_param(self):
+        '''
+        Test whether getting parameters generally works.
+
+        Note:
+            Only getting 'distance_sensor0.target' is tested.
+        '''
         self.logger.info(">> test_get_param")
         self.assertTrue(self.node.running)
         param = self.node.get_param('distance_sensor0.target')
         self.assertNotEqual(param, None)
 
     def test_get_version(self):
+        '''
+        Test whether getting version works.
+        '''
         self.logger.info(">> test_get_version")
         self.assertTrue(self.node.running)
         param = self.node.get_param('default.version')
@@ -60,6 +89,15 @@ class TestInphasectlNode(unittest.TestCase):
 
     @unittest.skip('Can not be tested as there is no Exception thrown')
     def test_get_unknown_param(self):
+        '''
+        Test whether getting an unknown parameter reports an Exception.
+
+        Note:
+            Testing this is currently no possible.
+
+        TODO:
+            Add necessary implementation to inphasectl
+        '''
         self.logger.info(">> test_get_unknown_param")
         self.assertTrue(self.node.running)
         param = self.node.get_param('distance_sensor0.unknown')
@@ -68,6 +106,11 @@ class TestInphasectlNode(unittest.TestCase):
         self.assertEqual(param, None)
 
     def test_node_setup(self):
+        '''
+        Test setting parameters and reading after works.
+
+        This is done for every parameter individually.
+        '''
         self.logger.info(">> test_node_setup")
         self.assertTrue(self.node.running)
         settings = dict()
@@ -81,6 +124,11 @@ class TestInphasectlNode(unittest.TestCase):
             self.assertEqual(settings[parameter], param)
 
     def test_node_setup_fast(self):
+        '''
+        Test setting parameters and reading after works.
+
+        At first all parameters are set. After that they are got.
+        '''
         self.logger.info(">> test_node_setup_fast")
         self.assertTrue(self.node.running)
         settings = dict()
@@ -97,6 +145,11 @@ class TestInphasectlNode(unittest.TestCase):
             self.assertEqual(settings[parameter], param)
 
     def test_start(self):
+        '''
+        Test whether a measurement will be done after start and return
+        data for further processing, e.g. decoding binary data to
+        measurements
+        '''
         self.logger.info(">> test_start")
         self.assertTrue(self.node.running)
         self.node.start()
@@ -104,12 +157,24 @@ class TestInphasectlNode(unittest.TestCase):
         self.assertGreater(len(data_to_process), 0)
 
     def test_list_parameters(self):
+        '''
+        Test whether the `list-parameters` command returns data.
+
+        Note:
+            There is no check done whether the returned data are correct.
+        '''
         self.logger.info(">> test_list_parameters")
         self.node.list_parameters()
         data_to_process = self.node.data_queue.get(timeout=0.5)
         self.assertGreater(len(data_to_process), 0)
 
     def test_list_devices(self):
+        '''
+        Test whether the `list-devices` command returns data.
+
+        Note:
+            There is no check done whether the returned data are correct.
+        '''
         self.logger.info(">> test_list_devices")
         self.node.list_devices()
         data_to_process = self.node.data_queue.get(timeout=0.5)
