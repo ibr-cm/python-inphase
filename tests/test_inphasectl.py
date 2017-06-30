@@ -137,8 +137,8 @@ if __name__ == "__main__":
     logger.setLevel(args.loglevel)
 
     # create console handler and set level to debug
-    ch = logging.StreamHandler()
-    ch.setLevel(args.loglevel)
+    CON_HANDLER = logging.StreamHandler()
+    CON_HANDLER.setLevel(args.loglevel)
     # TODO add filelogger if no console logging is wanted
     if args.logfile:
         print("Currently no support for logfiles ignoring file", args.logfile)
@@ -147,11 +147,11 @@ if __name__ == "__main__":
     # TODO: use CONSTANT from inphase module
     formatter = logging.Formatter('%(name)s/%(funcName)s (%(threadName)s) - %(levelname)s - %(message)s')
 
-    # add formatter to ch
-    ch.setFormatter(formatter)
+    # add formatter to CON_HANDLER
+    CON_HANDLER.setFormatter(formatter)
 
-    # add ch to logger
-    logger.addHandler(ch)
+    # add CON_HANDLER to logger
+    logger.addHandler(CON_HANDLER)
 
     logger.info("Running as program. Starting unittests")
     TestInphasectlNode.DEVICE_URL = args.device
