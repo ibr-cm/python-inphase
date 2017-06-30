@@ -117,8 +117,8 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(description='Unittest of inphasectl python counterpart.')
-    parser.add_argument('-p',  '--port', type=str, default='/dev/ttyUSB0',
-                       help='port to connect or url to device')
+    parser.add_argument('-d',  '--device', type=str, default='socket://localhost:50005',
+                       help='serial device to connect or url to device')
     parser.add_argument('-b',  '--baudrate', type=int, default=38400,
                        help='baudrate to use when connecting to serial device')
     parser.add_argument('-l',  '--loglevel', type=str, default='ERROR',
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     logger.info("Running as program. Starting unittests")
-    TestInphasectlNode.DEVICE_URL = args.port
+    TestInphasectlNode.DEVICE_URL = args.device
     TestInphasectlNode.BAUDRATE = args.baudrate
     unittest.main()
 
