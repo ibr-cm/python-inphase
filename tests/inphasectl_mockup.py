@@ -27,7 +27,22 @@ settings['default.version'] = 'inphasectl-mockup'
 # .num_frequencies = 100};
 # .num_samples = 10,
 # .start_freq = 2400,
+devices = dict()
 
+for parameter in settings:
+    parameter_split = parameter.split(".")
+    device_name = parameter_split[0]
+    device_parameter_key = parameter_split[1]
+    value = settings[parameter]
+    logger.debug("Adding name %s key %s value %s", device_name, device_parameter_key, value)
+    device_parameter = dict()
+    device_parameter[device_parameter_key] = value
+    if device_name not in devices:
+        devices[device_name] = device_parameter
+    else:
+        devices[device_name].update(device_parameter)
+
+logger.debug("Starting with devices: %s", devices)
 
 def send_measurements(conn, number_of_measurements):
     with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_bindata_only.bin'), 'rb') as f:
@@ -37,6 +52,27 @@ def send_measurements(conn, number_of_measurements):
             logger.info("Measurement #%d", counter)
             conn.send(measurement_data)
         logger.info("Sending done")
+
+def send_parameters(conn, device_to_send=None):
+    if device_to_send is None:
+        for device in devices:
+                logger.debug("Device: %s", device)
+                conn.send(b' - ' + device.encode()+b':\r\n')
+                send_list(conn, devices[device])
+    else:
+        logger.debug("Device: %s", device_to_send)
+        if device_to_send in devices:
+                conn.send(b' - ' + device_to_send.encode()+b':\r\n')
+                send_list(conn, devices[device_to_send])
+        else:
+            conn.send(b'unknown device ' + device_to_send.encode()+b'\r\n')
+
+def send_list(conn, list_to_send):
+    logger.info("Sending list: %s", list_to_send)
+    for entry in list_to_send:
+        logger.debug("Entry: %s", entry)
+        conn.send(b'\t - '+entry.encode()+b'\r\n')
+    logger.info("Sending done")
 
 
 def main():
@@ -60,7 +96,14 @@ def main():
                     lines = data.splitlines()
                     for line in lines:
                         command = line.split(b' ', 4)
-                        if command[0] == b'inphasectl' and len(command) > 2:
+
+                        if command[0] == b'inphasectl':
+                            conn.send(b'>>-- inphasectl --<<\r\n')
+                        else:
+                            logger.info("command dropped.")
+                            break
+
+                        if len(command) > 2:
                             logger.info("command received %s", command[1:])
                             param = command[2].decode()
                             if command[1] == b'get':
@@ -81,11 +124,20 @@ def main():
                                 if param == 'distance_sensor0.start' and settings[param] == 1:
                                     send_measurements(conn, settings['distance_sensor0.count'])
                                     conn.send(b'\r\ndistance_sensor0.start:0\r\n')
-                            elif command[1] == b'list-devices':
+                            else:
+                                logger.info("command dropped.")
+
+                        if len(command) > 1:
+                            if command[1] == b'list-devices':
                                 send_list(conn, devices)
                             elif command[1] == b'list-parameters':
-                                # TODO get device if set in command
-                                send_list(conn, devices)
+                                if len(command) > 2:
+                                    device = command[2].decode()
+                                else:
+                                    device = None
+                                send_parameters(conn, device)
+                            elif command[1] == b'version':
+                                conn.send(str(settings['default.version']).encode()+b'\r\n')
                             else:
                                 logger.info("command dropped.")
             logger.info('Connection closed by %s', addr)
