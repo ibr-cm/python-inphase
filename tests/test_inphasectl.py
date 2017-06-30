@@ -3,6 +3,13 @@ from inphase.inphasectl import inphasectl
 import time
 import unittest
 import logging
+import threading
+
+from tests import inphasectl_mockup
+
+inphasectl_mockup_thread = threading.Thread(target=inphasectl_mockup.main)
+inphasectl_mockup_thread.start()
+time.sleep(1)  # wait for thread to be ready
 
 class TestInphasectlNode(unittest.TestCase):
     '''
