@@ -7,9 +7,6 @@ import threading
 
 from tests import inphasectl_mockup
 
-inphasectl_mockup_thread = threading.Thread(target=inphasectl_mockup.main)
-inphasectl_mockup_thread.start()
-time.sleep(1)  # wait for thread to be ready
 
 class TestInphasectlNode(unittest.TestCase):
     '''
@@ -19,15 +16,20 @@ class TestInphasectlNode(unittest.TestCase):
     logger = logging.getLogger('inphase.test.inphasectl')
     node = inphasectl()
 
+    DEVICE_URL = inphasectl_mockup.URL
+    BAUDRATE = 38400
+
     def setUp(self):
-        pass
+        '''
+        Connect to device. In default the inphasectl mockup is stated in a thread
+        and a connection to it will be established.
+        '''
+        if self.DEVICE_URL == inphasectl_mockup.URL:
+            self.logger.info("Starting own inphasectl mockup")
+            self.inphasectl_mockup_thread = threading.Thread(target=inphasectl_mockup.main)
+            self.inphasectl_mockup_thread.start()
+            time.sleep(1)  # wait for thread to be ready
 
-    def test_init(self):
-        self.logger.info(">> test_init")
-        self.assertNotEqual(self.node, None)
-
-    def test_connect_serial(self):
-        self.logger.info(">> test_connect_serial")
         self.assertFalse(self.node.running)
         self.node.connect(serial_port=self.DEVICE_URL, baudrate=self.BAUDRATE)
         counter = 0
@@ -112,12 +114,6 @@ class TestInphasectlNode(unittest.TestCase):
         self.node.list_devices()
         data_to_process = self.node.data_queue.get(timeout=0.5)
         self.assertGreater(len(data_to_process), 0)
-
-    def test_zdisconnect(self):
-        self.logger.info(">> test_zdisconnect")
-        if self.node.running:
-            self.node.disconnect()
-        self.assertFalse(self.node.running)
 
 if __name__ == "__main__":
     import argparse

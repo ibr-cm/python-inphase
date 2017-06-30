@@ -7,6 +7,7 @@ import logging
 
 HOST = 'localhost'
 PORT = 50005
+URL = 'socket://'+HOST+':'+str(PORT)
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 s = None
@@ -44,6 +45,11 @@ for parameter in settings:
 
 logger.debug("Starting with devices: %s", devices)
 
+def stop():
+    logger.info("Stopping")
+    global running
+    running = False
+
 def send_measurements(conn, number_of_measurements):
     with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_bindata_only.bin'), 'rb') as f:
         logger.info("Sending measurements from file")
@@ -80,7 +86,9 @@ def main():
     with socket.socket() as s:
         running = True
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        logger.info('Binding %s:%s', HOST, PORT)
         s.bind((HOST, PORT))
+        logger.info('Listing on %s:%s', HOST, PORT)
         s.listen(1)
         try:
             conn, addr = s.accept()
