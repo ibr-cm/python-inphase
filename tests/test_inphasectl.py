@@ -6,7 +6,10 @@ import logging
 import threading
 
 from inphase.inphasectl import inphasectl
-from tests import inphasectl_mockup
+try:
+    from tests import inphasectl_mockup
+except ImportError:
+    import inphasectl_mockup
 
 
 class TestInphasectlNode(unittest.TestCase):
