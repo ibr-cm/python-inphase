@@ -3,7 +3,7 @@
 
 from inphase import Experiment
 from inphase.measurementprovider import *
-from . import inphasectl_mockup
+from tests import inphasectl_mockup
 
 import unittest
 import time
