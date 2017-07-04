@@ -9,18 +9,44 @@ except ImportError:
     warnings.warn("Using pure python yaml library, this might be very slow!", ImportWarning)
     from yaml import Loader, Dumper
 
+import pickle  # for caching
+
 
 class Experiment:
 
-    def __init__(self, path):
+    def __init__(self, path, caching=True):
         self.file_path = path
         self.measurements = list()
 
-        # open the experiment file
-        mode = 'r' if os.path.exists(path) else 'w+'
-        with open(self.file_path, mode) as f:
-            # read YAML data
-            data = yaml.load(f, Loader=Loader)
+        cache_path = path + '.cache'  # a possible caching file resides next to the original file
+
+        cache_loaded = False
+
+        # check if the experiment file exists
+        if os.path.exists(path):
+            # if it does, read it from disc
+            mode = 'r'
+
+            if caching:
+                # caching is enabled, check if a cached file exists
+                if os.path.exists(cache_path):
+                    # a cache file exists, check if it is newer than the original yml
+                    yaml_time = os.path.getmtime(path)
+                    cache_time = os.path.getmtime(cache_path)
+                    if yaml_time < cache_time:
+                        # cache file is newer than yaml file, load cache file instead of yaml
+                        with open(cache_path, 'rb') as f:
+                            data = pickle.load(f)  # load data from pickled file instead of yaml
+                        cache_loaded = True
+        else:
+            # if not, make a new empty file
+            mode = 'w+'
+
+        if not cache_loaded:
+            # open the experiment yaml file
+            with open(self.file_path, mode) as f:
+                # read YAML data
+                data = yaml.load(f, Loader=Loader)
         if not data:
             return
         if not isinstance(data, list):
@@ -28,6 +54,12 @@ class Experiment:
 
         for measurement in data:
             self.measurements.append(Measurement(measurement))
+
+        if not cache_loaded:
+            # if we made it until here, it means the cached file was not valid, save a new one if caching is requested
+            if caching:
+                with open(cache_path, 'wb') as f:
+                    pickle.dump(data, f)
 
     def __iter__(self):
         return self.measurements.__iter__()

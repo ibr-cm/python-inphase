@@ -4,3 +4,4 @@
 /*.egg-info
 /*.egg
 /doc/build/*
+*.yml.cache

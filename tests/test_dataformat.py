@@ -95,6 +95,10 @@ class UnitTest(unittest.TestCase):
             'timestamp': 1481120002.23
         }
 
+        # warm up caches
+        Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/experiment.yml'), caching=True)
+        Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/timestamped.yml'), caching=True)
+
     def test_experiment(self):
         e = Experiment(os.path.join(THIS_DIR, 'testdata/measurement_data/experiment.yml'))
         self.assertEqual(len(e.measurements), 2)
