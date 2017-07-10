@@ -35,6 +35,16 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
+    def test_calculateDistanceComplexOddFFT(self):
+        clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth.yml'))
+        distance0, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=16)
+        distance1, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=17)
+        distance2, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=18)
+
+        self.assertAlmostEqual(distance0, distance2, places=5)
+        self.assertAlmostEqual(distance0, distance1, places=5)
+        self.assertAlmostEqual(distance1, distance2, places=5)
+
     def test_notImplemented(self):
         with self.assertRaises(NotImplementedError):
             distance, extra_data = calculateDistance(self.e.measurements[0], calc_type='foobar')

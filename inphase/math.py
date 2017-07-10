@@ -122,13 +122,18 @@ def _calcDistComplex(measurement, fft_bins=4096, dc_threshold=0):
     # calculate fft
     fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
 
+    if fft_bins % 2:
+        # we have an odd number of bins
+        # maximum positive and minimum negative frequency are aliases, remove the minumum negative frequency
+        fft_result = np.delete(fft_result, int(fft_bins/2))
+
     # find bin with maximum peak and normalize to [0, 1]
     argmax = np.argmax(fft_result)
     if argmax < dc_threshold or argmax > fft_bins-dc_threshold:
         distance = np.nan
         dqi = 0
     else:
-        m = argmax/float(fft_bins)
+        m = argmax/len(fft_result)
 
         # calculate distance from bin position
         distance = _slopeToDist2(m)
