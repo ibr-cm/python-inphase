@@ -1,6 +1,10 @@
 # InPhase Python Module
 This python module contains all helper functions and classes that are helpful to run experiments with the InPhase system.
 
+## Project health
+CI status: [![pipeline status](https://gitlab.ibr.cs.tu-bs.de/inphase/python-inphase/badges/master/pipeline.svg)](https://gitlab.ibr.cs.tu-bs.de/inphase/python-inphase/commits/master)
+
+Test coverage: [![coverage report](https://gitlab.ibr.cs.tu-bs.de/inphase/python-inphase/badges/master/coverage.svg)](https://gitlab.ibr.cs.tu-bs.de/inphase/python-inphase/commits/master)
 
 ## Installation
 This copies the module to `/usr/...` so you can use it system-wide in Python 3 via `import inphase`:
