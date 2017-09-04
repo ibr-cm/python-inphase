@@ -1,11 +1,11 @@
 before_script:
   - apt-get update -qy
-  - apt-get install -y python3 python3-setuptools python3-certifi python3-yaml python3-numpy python3-serial python3-nose
+  - apt-get install -y python3 python3-setuptools python3-certifi python3-yaml python3-numpy python3-serial python3-nose python3-coverage
 
 test_library:
   stage: test
   script:
-    - python3 setup.py test
+    - python3 setup.py nosetests --with-coverage --cover-package=inphase
 
 documentation:
   stage: deploy
