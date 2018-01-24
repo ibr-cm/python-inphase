@@ -23,8 +23,8 @@ class UnitTest(unittest.TestCase):
 
         self.assertAlmostEqual(distance, 24966.18043, places=5)
         self.assertAlmostEqual(extra_data['dqi'], 3109082.67547, places=5)
-        self.assertEqual(extra_data['autocorrelation'].size, len(self.e.measurements[0]['samples'])-1)
-        self.assertEqual(extra_data['fft'].size, int(fft_bins/2))
+        self.assertEqual(extra_data['autocorrelation'].size, len(self.e.measurements[0]['samples']) - 1)
+        self.assertEqual(extra_data['fft'].size, int(fft_bins / 2))
 
     def test_calculateDistanceComplex(self):
         fft_bins = 1024
@@ -55,6 +55,7 @@ class UnitTest(unittest.TestCase):
 
         self.assertTrue(np.isnan(distance))
         self.assertEqual(extra_data['dqi'], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

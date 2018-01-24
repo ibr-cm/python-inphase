@@ -7,7 +7,7 @@ import logging
 
 HOST = 'localhost'
 PORT = 50005
-URL = 'socket://'+HOST+':'+str(PORT)
+URL = 'socket://' + HOST + ':' + str(PORT)
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 s = None
@@ -45,10 +45,12 @@ for parameter in settings:
 
 logger.debug("Starting with devices: %s", devices)
 
+
 def stop():
     logger.info("Stopping")
     global running
     running = False
+
 
 def send_measurements(conn, number_of_measurements):
     with open(os.path.join(THIS_DIR, 'testdata/serial_data/inphasectl_single_shot_bindata_only.bin'), 'rb') as f:
@@ -59,25 +61,27 @@ def send_measurements(conn, number_of_measurements):
             conn.send(measurement_data)
         logger.info("Sending done")
 
+
 def send_parameters(conn, device_to_send=None):
     if device_to_send is None:
         for device in devices:
                 logger.debug("Device: %s", device)
-                conn.send(b' - ' + device.encode()+b':\r\n')
+                conn.send(b' - ' + device.encode() + b':\r\n')
                 send_list(conn, devices[device])
     else:
         logger.debug("Device: %s", device_to_send)
         if device_to_send in devices:
-                conn.send(b' - ' + device_to_send.encode()+b':\r\n')
+                conn.send(b' - ' + device_to_send.encode() + b':\r\n')
                 send_list(conn, devices[device_to_send])
         else:
-            conn.send(b'unknown device ' + device_to_send.encode()+b'\r\n')
+            conn.send(b'unknown device ' + device_to_send.encode() + b'\r\n')
+
 
 def send_list(conn, list_to_send):
     logger.info("Sending list: %s", list_to_send)
     for entry in list_to_send:
         logger.debug("Entry: %s", entry)
-        conn.send(b'\t - '+entry.encode()+b'\r\n')
+        conn.send(b'\t - ' + entry.encode() + b'\r\n')
     logger.info("Sending done")
 
 
@@ -117,17 +121,17 @@ def main():
                             if command[1] == b'get':
                                 if param in settings:
                                     value = settings[param]
-                                    conn.send(param.encode()+b':'+str(value).encode()+b'\r\n')
+                                    conn.send(param.encode() + b':' + str(value).encode() + b'\r\n')
                                 else:
                                     logger.info("param %s not in %s", param, settings)
-                                    conn.send(b'err: unknown parameter '+command[2]+b'\r\n')
+                                    conn.send(b'err: unknown parameter ' + command[2] + b'\r\n')
                             elif command[1] == b'set':
                                 value = command[3]
                                 try:
                                     settings[param] = int(value.decode())
                                 except ValueError:
                                     settings[param] = value.decode()
-                                conn.send(param.encode()+b':'+str(settings[param]).encode()+b'\r\n')
+                                conn.send(param.encode() + b':' + str(settings[param]).encode() + b'\r\n')
                                 logger.debug("param %s value %s", param, value)
                                 if param == 'distance_sensor0.start' and settings[param] == 1:
                                     send_measurements(conn, settings['distance_sensor0.count'])

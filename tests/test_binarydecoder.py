@@ -30,7 +30,7 @@ class UnitTest(unittest.TestCase):
             measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
         self.assertEqual(cm.output, [
             'ERROR:inphase.binarydecoder:frame invalid! length was: 83, expected length is: 350960'
-            ])
+        ])
 
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
@@ -54,7 +54,7 @@ class UnitTest(unittest.TestCase):
             'ERROR:inphase.binarydecoder:frame invalid! length was: 7, minimum length is: 12',
             'ERROR:inphase.binarydecoder:frame invalid! length was: 3, minimum length is: 12',
             'ERROR:inphase.binarydecoder:frame invalid! length was: 7, minimum length is: 12'
-            ])
+        ])
 
         self.assertEqual(len(measurements), 0)
         self.assertEqual(clean_data, input_data)
@@ -69,7 +69,7 @@ class UnitTest(unittest.TestCase):
             measurements, remaining_data, clean_data = inphase.decodeBinary(input_data)
         self.assertEqual(cm.output, [
             'ERROR:inphase.binarydecoder:frame invalid! length was: 83, expected length is: 350960'
-            ])
+        ])
 
         self.assertEqual(len(measurements), 1)
         self.assertEqual(clean_data, output_data)
@@ -88,14 +88,14 @@ class UnitTest(unittest.TestCase):
             measurements, remaining_data, clean = inphase.decodeBinary(test_data)
         self.assertEqual(cm.output, [
             'ERROR:inphase.binarydecoder:frame invalid! no data between start and stop symbol.'
-            ])
+        ])
         self.assertEqual(len(measurements), 0)
         self.assertEqual(clean, test_data)
         self.assertEqual(len(remaining_data), 0)
 
     def test_parsing(self):
         # split serial data into pieces of 10 bytes
-        data_pieces = [self.serial_data[i:i+10] for i in range(0, len(self.serial_data), 10)]
+        data_pieces = [self.serial_data[i:i + 10] for i in range(0, len(self.serial_data), 10)]
         remaining_data = bytes()
         measurements = list()
         clean_data = bytearray()

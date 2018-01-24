@@ -8,6 +8,7 @@ import queue
 
 from inphase.parameterdecoder import decodeParameters
 
+
 class inphasectl():
     """Python counterpart of inphasectl which is running as contiki-shell.
     This class uses logging for output.
@@ -67,7 +68,6 @@ class inphasectl():
             self.logger.info("Starting child thread")
             self.child_thread.start()
 
-
     def disconnect(self):
         """Disconnect from device."""
         self.running = False
@@ -87,7 +87,7 @@ class inphasectl():
         self.logger.info("deleted saved parameter")
         self.__get_param(param)
         counter = 0
-        while self.read_parameters[param] == None:
+        while self.read_parameters[param] is None:
             if counter == 10:
                 raise Exception("Device does not answer")
             counter += 1
@@ -105,7 +105,7 @@ class inphasectl():
         self.logger.info("Setting '%s' to value '%s'" % (param, value))
         self.send_cmd('set %s %s' % (param, value))
         counter = 0
-        while self.read_parameters[param] == None:
+        while self.read_parameters[param] is None:
             if counter == 10:
                 raise Exception("Device does not answer")
             counter += 1
@@ -118,7 +118,7 @@ class inphasectl():
         self.single_query = False
         self.measuring = True
 
-    def list_parameters(self, device = b''):
+    def list_parameters(self, device=b''):
         if device != b'':
             self.logger.info("listing parameters of device", device)
             self.send_cmd('list_parameters %s' % device)
@@ -167,4 +167,3 @@ class inphasectl():
         # TODO: maybe delete read_parameters here, becaue we will be out of sync
         self.logger.info("serial_thread stopped")
         self.ser.close()
-

@@ -49,9 +49,9 @@ def decodeBinary(data, timestamp=True):
         # remove data before the frame from remaining data, it does not contain any more binary frames
         clean_data += remaining_data[0:start]
         # extract frame from remaining data
-        raw_frame = remaining_data[start:end+1]
+        raw_frame = remaining_data[start:end + 1]
         # remaining data is now everything after the current frame
-        remaining_data = remaining_data[end+1:]
+        remaining_data = remaining_data[end + 1:]
 
         if len(raw_frame) == 2:
             # we have found an empty frame
@@ -77,7 +77,7 @@ def decodeBinary(data, timestamp=True):
         # set up a measurement in the correct data format
         reflector = Node({
             'uid': measurement_data['reflector_address']
-            })
+        })
 
         samples = list()
 
@@ -85,14 +85,14 @@ def decodeBinary(data, timestamp=True):
             samples.append(Sample({
                 'frequency': freq,
                 'pmu_values': values
-                }))
+            }))
 
         measurement = Measurement({
             'dqi': measurement_data['dist_quality'],
             'measured_distance': measurement_data['dist_meter'] * 1000 + measurement_data['dist_centimeter'] * 10,
             'reflector': reflector,
             'samples': samples
-            })
+        })
 
         if timestamp:
             measurement['timestamp'] = time.time()
@@ -108,7 +108,7 @@ def _unescape(frame):
 
     # unescape all bytes after escape bytes
     for i in indices:
-        frame[i+1] = (frame[i+1] + SERIAL_ESCAPE_ADD) % 256
+        frame[i + 1] = (frame[i + 1] + SERIAL_ESCAPE_ADD) % 256
 
     # remove all escape bytes fround in the first step
     frame = bytearray([i for j, i in enumerate(frame) if j not in indices])
@@ -124,14 +124,14 @@ def _parsePacket(frame):
 
     unpack_str = '>BB'
     unpack_str_2 = '>3H4B'
-    minimum_frame_length = calcsize(unpack_str)+calcsize(unpack_str_2)
+    minimum_frame_length = calcsize(unpack_str) + calcsize(unpack_str_2)
 
     if len(frame) < minimum_frame_length:
         logger.error("frame invalid! length was: %d, minimum length is: %d", len(frame), minimum_frame_length)
         return None
 
     samples, step = unpack(unpack_str, frame[0:calcsize(unpack_str)])
-    frequency_start, measurements, reflector_address, dist_meter, dist_centimeter, dist_quality, status = unpack(unpack_str_2, frame[calcsize(unpack_str):calcsize(unpack_str)+calcsize(unpack_str_2)])
+    frequency_start, measurements, reflector_address, dist_meter, dist_centimeter, dist_quality, status = unpack(unpack_str_2, frame[calcsize(unpack_str):calcsize(unpack_str) + calcsize(unpack_str_2)])
 
     if (step == 0):  # by definition 0 step size is 0.5
         step = 0.5
@@ -159,11 +159,11 @@ def _parsePacket(frame):
         data['frequencies'].append(frequency_start + i * step)
 
     data['values'] = list()
-    values = unpack('>' + str(measurements*samples) + 'b', frame[minimum_frame_length:])
+    values = unpack('>' + str(measurements * samples) + 'b', frame[minimum_frame_length:])
 
     for i in range(measurements):
         data['values'].append(list())
         for j in range(samples):
-            data['values'][i].append(values[i*samples+j])
+            data['values'][i].append(values[i * samples + j])
 
     return data

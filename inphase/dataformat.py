@@ -116,7 +116,7 @@ class Measurement(dict):
         if 'timestamp' in self:
             try:
                 datetime.datetime.fromtimestamp(self['timestamp'])
-            except:
+            except (TypeError, OverflowError, OSError):
                 raise Exception('timestamp is not parsable')
 
         # initiator and reflector are checked in __init__

@@ -1,7 +1,6 @@
 from inphase import Measurement
 from inphase import Experiment
 from inphase import decodeBinary
-from inphase import decodeParameters
 from inphase import signals
 from inphase.inphasectl import inphasectl
 
@@ -13,6 +12,7 @@ import threading
 import socket
 import logging
 import queue
+
 
 class MeasurementProvider:
 
@@ -47,7 +47,7 @@ class ConstantRateMeasurementProvider(MeasurementProvider):
                 self.last_index = (self.last_index + 1) % len(self.measurements)
                 to_return.append(self.measurements[self.last_index])
         else:
-            to_return = self.measurements[self.last_index:self.last_index+measurement_count]
+            to_return = self.measurements[self.last_index:self.last_index + measurement_count]
             self.last_index += measurement_count
 
         # timestamp from this call is saved only when measurements were returned
@@ -134,7 +134,7 @@ class SawtoothMeasurementProvider(MeasurementProvider):
                 'moving': False,
                 'name': 'Dummy Node'
             },
-            'samples': signals.generate_sawtooth_samples(frequency=self.frequency*199)
+            'samples': signals.generate_sawtooth_samples(frequency=self.frequency * 199)
         }
         measurements = [Measurement(m)] * self.count
         return measurements
@@ -142,6 +142,7 @@ class SawtoothMeasurementProvider(MeasurementProvider):
 
 class InphasectlMeasurementProvider(MeasurementProvider):
     """ A MeasurementProvider using inphasectl to setup node and get measurements on demand."""
+
     def __init__(self, serial_port=None, baudrate=38400, address=None, port=50000, count=3, target=None):
         self.count = count
         self.target = target
@@ -170,10 +171,10 @@ class InphasectlMeasurementProvider(MeasurementProvider):
         Raises:
             ValueError: If value on node does not match setted.
         """
-        if target == None:
+        if target is None:
             target = self.target
 
-        if count == None:
+        if count is None:
             count = self.count
 
         settings = dict()
@@ -203,7 +204,6 @@ class InphasectlMeasurementProvider(MeasurementProvider):
 
     def measurement_thread(self):
         self.logger.info("start measurement_thread")
-        clean_data = None
         while self.running:
             try:
                 data_to_process = self.node.data_queue.get(timeout=0.5)

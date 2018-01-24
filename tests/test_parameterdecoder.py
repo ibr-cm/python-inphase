@@ -29,7 +29,7 @@ class UnitTest(unittest.TestCase):
 
     def test_parsing_pieces(self):
         # split serial data into pieces of 10 bytes
-        data_pieces = [self.serial_data[i:i+10] for i in range(0, len(self.serial_data), 10)]
+        data_pieces = [self.serial_data[i:i + 10] for i in range(0, len(self.serial_data), 10)]
         remaining_data = bytes()
         parameters = dict()
         for d in data_pieces:
@@ -38,7 +38,7 @@ class UnitTest(unittest.TestCase):
             p, remaining_data, c = inphase.decodeParameters(remaining_data)
             parameters.update(p)
             if not p:
-                self.assertEqual(c+remaining_data, remaining_data_before)
+                self.assertEqual(c + remaining_data, remaining_data_before)
 
         self.assertEqual(len(parameters), 1)
         self.assertDictEqual(parameters, {'test_key': 1234})
@@ -70,10 +70,9 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(clean, b'')
         self.assertEqual(remaining_data, b'')
 
-
     def test_parsing_dump(self):
         # split serial data into pieces of 10 bytes
-        data_pieces = [self.serial_dump[i:i+10] for i in range(0, len(self.serial_dump), 10)]
+        data_pieces = [self.serial_dump[i:i + 10] for i in range(0, len(self.serial_dump), 10)]
         remaining_data = bytes()
         parameters = dict()
         for d in data_pieces:
@@ -82,10 +81,11 @@ class UnitTest(unittest.TestCase):
             p, remaining_data, c = inphase.decodeParameters(remaining_data)
             parameters.update(p)
             if not p:
-                self.assertEqual(c+remaining_data, remaining_data_before)
+                self.assertEqual(c + remaining_data, remaining_data_before)
         self.assertEqual(len(parameters), 1)
         self.assertIn('distance_sensor0.start', parameters)
         self.assertEqual(parameters['distance_sensor0.start'], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

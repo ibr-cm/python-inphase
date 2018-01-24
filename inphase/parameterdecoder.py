@@ -1,11 +1,10 @@
-import unittest
-import time
 import re
 import logging
 
 logger = logging.getLogger(__name__)
 
 REGEX_KEYVALUE = r"^(\s*)(?P<key>(?:\w+\.){0,}(?:\w+))(?P<sep>:\s*)(?P<value>[\S ]*)"
+
 
 def decodeParameters(data, timestamp=True):
     """Returns parsed parameters from data, also returns remaining data that still needs parsing and clean data that does not contain any parameters."""
@@ -19,18 +18,18 @@ def decodeParameters(data, timestamp=True):
     while True:
         start = 0
         logger.debug("> start {} end {}".format(start, end))
-        logger.debug("remaining_data: %s" %  remaining_data)
+        logger.debug("remaining_data: %s" % remaining_data)
         end = remaining_data.find(b'\r\n', start)
         if end == -1:
             break
-        logger.debug((len("remaining_data b'")+end)*' '+"^")
+        logger.debug((len("remaining_data b'") + end) * ' ' + "^")
         logger.debug("end {}".format(end))
 
         line = remaining_data[start:end]
         logger.debug("line: %s" % line)
         parameter, value = _parse_line(line.decode(errors='replace'))
 
-        remaining_data = remaining_data[end+2:]
+        remaining_data = remaining_data[end + 2:]
 
         start = end
 
@@ -41,10 +40,11 @@ def decodeParameters(data, timestamp=True):
             clean_data += line + b'\r\n'
 
     logger.debug("parameters: %s" % parameters)
-    logger.debug("remaining_data: %s" %  remaining_data)
+    logger.debug("remaining_data: %s" % remaining_data)
     logger.debug("clean_data %s\n" % clean_data)
 
     return parameters, remaining_data, clean_data
+
 
 def _parse_line(line_to_parse):
     # logger.debug("Parsing line: '{}'".format(line_to_parse))
@@ -71,16 +71,17 @@ def _parse_line(line_to_parse):
 
     return key, value
 
+
 def _parse_kv(key, value):
     if value == "Contiki> ":
         logger.debug("ignoring contiki-prompt '{}' '{}'".format(key, value))
         return False
 
     if key == "err":
-        logger.error("INPHASE:"+str(value))
+        logger.error("INPHASE:" + str(value))
         return False
     elif key == "DBG":
-        logger.debug("INPHASE:"+str(value))
+        logger.debug("INPHASE:" + str(value))
         return False
     else:
         logger.debug("key:'{}'; value:'{}';".format(key, value))

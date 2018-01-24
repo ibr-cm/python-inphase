@@ -183,20 +183,21 @@ class TestInphasectlNode(unittest.TestCase):
         data_to_process = self.node.data_queue.get(timeout=0.5)
         self.assertGreater(len(data_to_process), 0)
 
+
 if __name__ == "__main__":
     import argparse
     import sys
 
     parser = argparse.ArgumentParser(description='Unittest of inphasectl python counterpart.')
-    parser.add_argument('-d',  '--device', type=str, default='socket://localhost:50005',
-                       help='serial device to connect or url to device')
-    parser.add_argument('-b',  '--baudrate', type=int, default=38400,
-                       help='baudrate to use when connecting to serial device')
-    parser.add_argument('-l',  '--loglevel', type=str, default='ERROR',
-                       help='level of debug output on console')
-    parser.add_argument('-L',  '--loglevel_file', type=str, default='DEBUG',
-                       help='level of debug output to file')
-    parser.add_argument('-f',  '--logfile', type=str, help='filename of logfile')
+    parser.add_argument('-d', '--device', type=str, default='socket://localhost:50005',
+                        help='serial device to connect or url to device')
+    parser.add_argument('-b', '--baudrate', type=int, default=38400,
+                        help='baudrate to use when connecting to serial device')
+    parser.add_argument('-l', '--loglevel', type=str, default='ERROR',
+                        help='level of debug output on console')
+    parser.add_argument('-L', '--loglevel_file', type=str, default='DEBUG',
+                        help='level of debug output to file')
+    parser.add_argument('-f', '--logfile', type=str, help='filename of logfile')
     args = parser.parse_args()
     del sys.argv[1:]
 
@@ -225,4 +226,3 @@ if __name__ == "__main__":
     TestInphasectlNode.DEVICE_URL = args.device
     TestInphasectlNode.BAUDRATE = args.baudrate
     unittest.main()
-

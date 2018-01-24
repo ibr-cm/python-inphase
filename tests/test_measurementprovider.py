@@ -9,11 +9,11 @@ from tests import inphasectl_mockup
 import unittest
 import time
 import socket
+import logging
+import sys
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-import logging
-import sys
 
 logger = logging.getLogger()
 logger.level = logging.ERROR
@@ -26,6 +26,7 @@ logging.getLogger('inphase.parameterdecoder').setLevel(logging.ERROR)
 logging.getLogger('inphase.inphasectl').setLevel(logging.ERROR)
 logging.getLogger('tests.inphasectl_mockup').setLevel(logging.ERROR)
 logging.getLogger('inphase.measurementprovider').setLevel(logging.ERROR)
+
 
 class UnitTest(unittest.TestCase):
 
@@ -80,12 +81,11 @@ class UnitTest(unittest.TestCase):
         provider = SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
         measurements = provider.getMeasurements()
         self.assertEqual(len(measurements), COUNT)
-        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE/FFT_BINS
+        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
         for measurement in measurements:
-            calculated_distance, extra_data = inphase.math.calculateDistance(measurement,
-                    fft_bins=FFT_BINS)
+            calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
             experiment.addMeasurement(measurement)
-            self.assertLess(abs(calculated_distance-DISTANCE), FFT_RESOLUTION)
+            self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
 
     def test_SawtoothMeasurementProviderAccuracy(self):
         DISTANCE = 37000  # Distance to generate Measurements for
@@ -93,7 +93,7 @@ class UnitTest(unittest.TestCase):
         FFT_BINS = 2048
 
         experiment = inphase.Experiment('test_SawtoothMeasurementProvider.yml')
-        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE/FFT_BINS
+        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
         for distance in range(0, 300000, 50000):
             DISTANCE = distance
             provider = inphase.measurementprovider.SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
@@ -101,10 +101,9 @@ class UnitTest(unittest.TestCase):
             self.assertEqual(len(measurements), COUNT)
 
             for measurement in measurements:
-                calculated_distance, extra_data = inphase.math.calculateDistance(measurement,
-                        fft_bins=FFT_BINS)
+                calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
                 experiment.addMeasurement(measurement)
-                self.assertLess(abs(calculated_distance-DISTANCE), FFT_RESOLUTION)
+                self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
 
     def test_InphasectlMeasurementProvider(self):
         thread = threading.Thread(target=inphasectl_mockup.main)
@@ -131,7 +130,7 @@ class UnitTest(unittest.TestCase):
     def test_BinaryFileMeasurementProviderMultiple(self):
         self.p = BinaryFileMeasurementProvider([os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt'), os.path.join(THIS_DIR, 'testdata/serial_data/test_13.txt')], output_rate=20000, loop=False)
         time.sleep(0.1)
-        self.assertEqual(len(self.p.getMeasurements()), 665*2)
+        self.assertEqual(len(self.p.getMeasurements()), 665 * 2)
         self.assertEqual(len(self.p.getMeasurements()), 0)
 
     def test_ConstantRateMeasurementProvider1(self):
@@ -248,8 +247,8 @@ class UnitTest(unittest.TestCase):
                 for m in measurements:
                     m_list.append(m)
             i += 1
-        for i in range(len(m_list)-2):
-            self.assertNotEqual(m_list[i]['timestamp'], m_list[i+1]['timestamp'], 'timestamps should not be equal!')
+        for i in range(len(m_list) - 2):
+            self.assertNotEqual(m_list[i]['timestamp'], m_list[i + 1]['timestamp'], 'timestamps should not be equal!')
 
 
 if __name__ == "__main__":

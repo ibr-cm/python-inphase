@@ -58,16 +58,16 @@ def _calcDistReal(measurement, fft_bins=4096):
     # our definition of the autocorrelation function
     def autocorr(x):
         result = np.correlate(x, x, mode='full')
-        return result[int(np.ceil(result.size/2)):]
+        return result[int(np.ceil(result.size / 2)):]
 
     # autocorrelate
     autocorr_result = autocorr(means)
 
     # calculate fft
-    fft_result = np.real(np.fft.fft(autocorr_result, fft_bins)[0:int(fft_bins/2)])
+    fft_result = np.real(np.fft.fft(autocorr_result, fft_bins)[0:int(fft_bins / 2)])
 
     # find bin with maximum peak and normalize to [0, 1]
-    m = np.argmax(fft_result)/float(fft_bins/2.0)
+    m = np.argmax(fft_result) / float(fft_bins / 2.0)
 
     # calculate distance from bin position
     distance = _slopeToDist(m)
@@ -88,16 +88,16 @@ def _calcDistReal(measurement, fft_bins=4096):
 def _slopeToDist(m, fd=0.5):
     # fd is the sample spacing in MHz
     c = 299792458                       # speed of light
-    l = c / (float(fd) * 10**6) * 0.5   # effective wavelength
-    d_max = l / 2                       # maximum distance with given frequency delta
+    wavelength = c / (float(fd) * 10**6) * 0.5   # effective wavelength
+    d_max = wavelength / 2                       # maximum distance with given frequency delta
     return d_max * m * 1000             # return value in millimeter
 
 
 def _slopeToDist2(m, fd=0.5):
     # fd is the sample spacing in MHz
     c = 299792458                       # speed of light
-    l = c / (float(fd) * 10**6) * 0.5   # effective wavelength and maximum distance
-    return l * m * 1000                 # return value in millimeter
+    wavelength = c / (float(fd) * 10**6) * 0.5   # effective wavelength and maximum distance
+    return wavelength * m * 1000                 # return value in millimeter
 
 
 def _calcDistComplex(measurement, fft_bins=4096, dc_threshold=0):
@@ -125,15 +125,15 @@ def _calcDistComplex(measurement, fft_bins=4096, dc_threshold=0):
     if fft_bins % 2:
         # we have an odd number of bins
         # maximum positive and minimum negative frequency are aliases, remove the minumum negative frequency
-        fft_result = np.delete(fft_result, int(fft_bins/2))
+        fft_result = np.delete(fft_result, int(fft_bins / 2))
 
     # find bin with maximum peak and normalize to [0, 1]
     argmax = np.argmax(fft_result)
-    if argmax < dc_threshold or argmax > fft_bins-dc_threshold:
+    if argmax < dc_threshold or argmax > fft_bins - dc_threshold:
         distance = np.nan
         dqi = 0
     else:
-        m = argmax/len(fft_result)
+        m = argmax / len(fft_result)
 
         # calculate distance from bin position
         distance = _slopeToDist2(m)
