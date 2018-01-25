@@ -35,6 +35,19 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
+    def test_calculateDistanceComplexInterpolated(self):
+        clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth.yml'))
+        fft_bins = 1024
+        with self.assertRaises(NotImplementedError):
+            distance, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=fft_bins, interpolation='unknown')
+
+        distance, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=fft_bins, interpolation='parabolic')
+
+        self.assertAlmostEqual(distance, 150095.021346, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 199.89610, places=5)
+        self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
+        self.assertEqual(extra_data['fft'].size, int(fft_bins))
+
     def test_calculateDistanceComplexOddFFT(self):
         clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth.yml'))
         distance0, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=16)

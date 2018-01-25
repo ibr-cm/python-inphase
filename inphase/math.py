@@ -6,13 +6,17 @@ This module contains math functions that are needed to work with InPhase measure
 
 import numpy as np
 
+from inphase.interpolation import parabolic
+from inphase.constants import MAX_DISTANCE
 
-def calculateDistance(measurement, calc_type='complex', **kwargs):
+
+def calculateDistance(measurement, calc_type='complex', interpolation=None, **kwargs):
     """This function calculates a distance in millimeters a from :class:`Measurement` object.
 
     Args:
         measurement (:obj:`Measurement`): The measurement to calculate a distance for.
         calc_type (str, optional):  Algorithm to use for calculation:
+        interpolation (string): Method of spectral interpolation, set value will be passed to interpolation function.
 
     `calc_type` can be one the following options:
             * `real` will use the algorithm published in our `INFOCOM paper`_
@@ -38,7 +42,24 @@ def calculateDistance(measurement, calc_type='complex', **kwargs):
         distance, extra_data['dqi'], extra_data['complex_signal'], extra_data['fft'] = _calcDistComplex(measurement, **kwargs)
     else:
         raise NotImplementedError('The chosen calc_type does not exist!')
+
+    if interpolation:
+        distance, interpolation_result = _calcInterpDistance(mode=interpolation, fft=extra_data['fft'])
+        extra_data['interpolation_result'] = interpolation_result
+        extra_data['dqi'] = interpolation_result[1]
+
     return distance, extra_data
+
+
+def _calcInterpDistance(mode, fft):
+    if mode == 'parabolic':
+        fft_resolution = 1000 * MAX_DISTANCE / len(fft)
+        intp_max, intp_value = parabolic(fft, np.argmax(fft))
+        interpolation_result = intp_max, intp_value
+        distance = intp_max * fft_resolution
+    else:
+        raise NotImplementedError('The chosen interpolation method does not exist!')
+    return distance, interpolation_result
 
 
 def _calcDistReal(measurement, fft_bins=4096):
