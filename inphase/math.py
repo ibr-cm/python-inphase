@@ -9,6 +9,8 @@ import numpy as np
 from inphase.interpolation import parabolic
 from inphase.constants import MAX_DISTANCE
 
+DEFAULT_FFT_LEN = 4096
+
 
 def calculateDistance(measurement, calc_type='complex', interpolation=None, **kwargs):
     """This function calculates a distance in millimeters a from :class:`Measurement` object.
@@ -36,34 +38,71 @@ def calculateDistance(measurement, calc_type='complex', interpolation=None, **kw
         https://www.ibr.cs.tu-bs.de/bib/xml/vonzengen:INFOCOM2016.html
     """
     extra_data = dict()
-    if calc_type is 'real':
-        distance, extra_data['dqi'], extra_data['autocorrelation'], extra_data['fft'] = _calcDistReal(measurement, **kwargs)
-    elif calc_type is 'complex':
-        distance, extra_data['dqi'], extra_data['complex_signal'], extra_data['fft'] = _calcDistComplex(measurement, **kwargs)
-    else:
-        raise NotImplementedError('The chosen calc_type does not exist!')
+
+    fft_bins = kwargs.get('fft_bins', DEFAULT_FFT_LEN)
+    dc_threshold = kwargs.get('dc_threshold', 0)
+
+    fft_result, fft_extras = calc_fft_spectrum(measurement, calc_type, fft_bins)
+
+    if calc_type == 'real':
+        fft_length = fft_bins
+    elif calc_type == 'complex':
+        fft_length = len(fft_result)
+
+    # search maxima
+    # TODO implement multi maxima handling
+    bin_pos = np.argmax(fft_result)
+    bin_value = np.max(fft_result)
 
     if interpolation:
-        distance, interpolation_result = _calcInterpDistance(mode=interpolation, fft=extra_data['fft'])
-        extra_data['interpolation_result'] = interpolation_result
-        extra_data['dqi'] = interpolation_result[1]
+        bin_pos, bin_value = _interpolate_maxima_position(fft_result,
+                                                          bin_pos,
+                                                          mode=interpolation)
+
+    if bin_pos < dc_threshold or bin_pos > fft_bins - dc_threshold:
+        norm_bin_pos = np.nan
+    else:
+        # normalize bin position
+        norm_bin_pos = _normalize_bin_pos(bin_pos, calc_type, fft_length)
+
+    if np.isnan(norm_bin_pos):
+        extra_data['dqi'] = 0
+        distance = np.nan
+    else:
+        # store bin value as dqi
+        extra_data['dqi'] = bin_value
+        # calculate distance from bin position
+        if calc_type == 'real':
+            distance = _slopeToDist(norm_bin_pos)
+        elif calc_type == 'complex':
+            distance = _slopeToDist2(norm_bin_pos)
+
+    # store extra data of FFT
+    extra_data['fft'] = fft_result
+    extra_data.update(fft_extras)
+
+    # subtract antenna offsets if provided
+    distance = substract_provided_offsets(measurement, distance)
 
     return distance, extra_data
 
 
-def _calcInterpDistance(mode, fft):
+def _interpolate_maxima_position(fft, maximum, mode):
+    """Use spectral interpolation to calculate better maximum position
+       estimation."""
     if mode == 'parabolic':
-        fft_resolution = 1000 * MAX_DISTANCE / len(fft)
-        intp_max, intp_value = parabolic(fft, np.argmax(fft))
-        interpolation_result = intp_max, intp_value
-        distance = intp_max * fft_resolution
+        intp_m, intp_dqi = parabolic(fft, maximum)
     else:
         raise NotImplementedError('The chosen interpolation method does not exist!')
-    return distance, interpolation_result
+
+    return intp_m, intp_dqi
 
 
-def _calcDistReal(measurement, fft_bins=4096):
-    """Calculates the distance via autocorrelation/fft from a given measurement"""
+def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
+    """Calculates the spectrum of the given measurement via selected fft type and
+       length."""
+    # prepare extra_data
+    extra_data = dict()
 
     # prepare lists for calculations
     frequencies = list()
@@ -73,28 +112,64 @@ def _calcDistReal(measurement, fft_bins=4096):
         frequencies.append(sample['frequency'])
         pmu_values.append(sample['pmu_values'])
 
-    # take mean of values as they might contain more than one pmu value per frequency
+    # take mean of values as they might contain more than one pmu value per
+    # frequency
     means = np.mean(pmu_values[:], 1)
 
-    # our definition of the autocorrelation function
-    def autocorr(x):
-        result = np.correlate(x, x, mode='full')
-        return result[int(np.ceil(result.size / 2)):]
+    # use fft variant to calculate spectrum
 
-    # autocorrelate
-    autocorr_result = autocorr(means)
+    if calc_type == 'real':
+        # our definition of the autocorrelation function
+        def autocorr(x):
+            result = np.correlate(x, x, mode='full')
+            return result[int(np.ceil(result.size / 2)):]
 
-    # calculate fft
-    fft_result = np.real(np.fft.fft(autocorr_result, fft_bins)[0:int(fft_bins / 2)])
+        # autocorrelate
+        autocorr_result = autocorr(means)
 
-    # find bin with maximum peak and normalize to [0, 1]
-    m = np.argmax(fft_result) / float(fft_bins / 2.0)
+        # calculate fft
+        # TODO check whether (fft_bins // 2) is sufficient to calculate range
+        fft_result = np.real(np.fft.fft(autocorr_result, fft_bins)[0:int(fft_bins / 2)])
 
-    # calculate distance from bin position
-    distance = _slopeToDist(m)
-    dqi = np.max(fft_result)
+        # store intermidiate result as extra
+        extra_data['autocorrelation'] = autocorr_result
 
-    # subtract antenna offsets if provided
+    elif calc_type == 'complex':
+        # map to 2*Pi
+        means = means / 256.0 * 2 * np.pi
+
+        complex_signal = np.cos(means) + 1j * np.sin(means)
+
+        # calculate fft
+        fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
+
+        # store intermidiate result as extra
+        extra_data['complex_signal'] = complex_signal
+
+        if fft_bins % 2:
+            # we have an odd number of bins
+            # maximum positive and minimum negative frequency are aliases,
+            # remove the minumum negative frequency
+            fft_result = np.delete(fft_result, int(fft_bins / 2))
+    else:
+        raise NotImplementedError('The chosen calc_type does not exist!')
+
+    return fft_result, extra_data
+
+
+def _normalize_bin_pos(bin_pos, calc_type, fft_bins=DEFAULT_FFT_LEN):
+    """find bin with maximum peak and normalize to [0, 1]"""
+    if calc_type == 'real':
+        norm_bin_pos = bin_pos / float(fft_bins / 2.0)
+    elif calc_type == 'complex':
+        norm_bin_pos = bin_pos / fft_bins
+
+    return norm_bin_pos
+
+
+def substract_provided_offsets(measurement, distance):
+    """Subtract antenna offsets from distance if provided in measurement"""
+
     if 'initiator' in measurement:
         if 'antenna_offset' in measurement['initiator']:
             distance -= measurement['initiator']['antenna_offset']
@@ -103,7 +178,7 @@ def _calcDistReal(measurement, fft_bins=4096):
         if 'antenna_offset' in measurement['reflector']:
             distance -= measurement['reflector']['antenna_offset']
 
-    return distance, dqi, autocorr_result, fft_result
+    return distance
 
 
 def _slopeToDist(m, fd=0.5):
@@ -119,54 +194,3 @@ def _slopeToDist2(m, fd=0.5):
     c = 299792458                       # speed of light
     wavelength = c / (float(fd) * 10**6) * 0.5   # effective wavelength and maximum distance
     return wavelength * m * 1000                 # return value in millimeter
-
-
-def _calcDistComplex(measurement, fft_bins=4096, dc_threshold=0):
-    """Calculates the distance via complex signal/fft from a given measurement"""
-
-    # prepare lists for calculations
-    frequencies = list()
-    pmu_values = list()
-
-    for sample in measurement['samples']:
-        frequencies.append(sample['frequency'])
-        pmu_values.append(sample['pmu_values'])
-
-    # take mean of values as they might contain more than one pmu value per frequency
-    means = np.mean(pmu_values[:], 1)
-
-    # map to 2*Pi
-    means = means / 256.0 * 2 * np.pi
-
-    complex_signal = np.cos(means) + 1j * np.sin(means)
-
-    # calculate fft
-    fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
-
-    if fft_bins % 2:
-        # we have an odd number of bins
-        # maximum positive and minimum negative frequency are aliases, remove the minumum negative frequency
-        fft_result = np.delete(fft_result, int(fft_bins / 2))
-
-    # find bin with maximum peak and normalize to [0, 1]
-    argmax = np.argmax(fft_result)
-    if argmax < dc_threshold or argmax > fft_bins - dc_threshold:
-        distance = np.nan
-        dqi = 0
-    else:
-        m = argmax / len(fft_result)
-
-        # calculate distance from bin position
-        distance = _slopeToDist2(m)
-        dqi = np.max(fft_result)
-
-    # subtract antenna offsets if provided
-    if 'initiator' in measurement:
-        if 'antenna_offset' in measurement['initiator']:
-            distance -= measurement['initiator']['antenna_offset']
-
-    if 'reflector' in measurement:
-        if 'antenna_offset' in measurement['reflector']:
-            distance -= measurement['reflector']['antenna_offset']
-
-    return distance, dqi, complex_signal, fft_result
