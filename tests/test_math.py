@@ -4,7 +4,7 @@
 from inphase import Experiment
 from inphase.math import calc_fft_spectrum
 from inphase.math import substract_provided_offsets
-from inphase.math import calculateDistance
+from inphase.math import calculateDistance, calculateDistances
 from inphase.dataformat import Measurement, Node
 
 import numpy as np
@@ -107,6 +107,19 @@ class UnitTest(unittest.TestCase):
         self.assertAlmostEqual(distance0, distance2, places=5)
         self.assertAlmostEqual(distance0, distance1, places=5)
         self.assertAlmostEqual(distance1, distance2, places=5)
+
+    def test_calculateDistances(self):
+        fft_bins = 1024
+        clean_mixed_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth_mixed_dist.yml'))
+        distances, extra_data = calculateDistances(clean_mixed_sawtooth.measurements[0], calc_type='complex',
+                                                   multi_max=True, fft_bins=fft_bins, interpolation='parabolic')
+        self.assertEqual(len(distances), 2)
+        self.assertEqual(len(extra_data['maxima']), 2)
+        self.assertEqual(len(extra_data['dqis']), 2)
+        self.assertAlmostEqual(distances[0], 9972.24512, places=5)
+        self.assertAlmostEqual(distances[1], 100011.75616, places=5)
+        self.assertAlmostEqual(extra_data['dqis'][0], 100.15191, places=5)
+        self.assertAlmostEqual(extra_data['dqis'][1], 100.12582, places=5)
 
     def test_notImplemented(self):
         with self.assertRaises(NotImplementedError):

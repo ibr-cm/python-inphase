@@ -7,6 +7,7 @@ measurement data.
 
 """
 
+from scipy.signal import argrelmax
 import numpy as np
 
 from inphase.interpolation import parabolic
@@ -14,7 +15,7 @@ from inphase.constants import SPEED_OF_LIGHT, DEFAULT_FREQ_SPACING
 
 DEFAULT_FFT_LEN = 4096
 DEFAULT_DC_TRESHOLD = 0
-
+DEFAULT_MIN_REL_MAX = 40
 
 def calculateDistance(measurement, calc_type='complex', interpolation=None, **kwargs):
     """This function calculates a distance in millimeters a from :class:`Measurement` object.
@@ -40,56 +41,81 @@ def calculateDistance(measurement, calc_type='complex', interpolation=None, **kw
     .. _INFOCOM paper:
         https://www.ibr.cs.tu-bs.de/bib/xml/vonzengen:INFOCOM2016.html
     """
+    distances, extra_data = calculateDistances(measurement, calc_type, interpolation, multi_max=False, **kwargs)
+
+    # Take first = global maximum
+    extra_data['dqi'] = extra_data['dqis'][0]
+    distance = distances[0]
+
+    return distance, extra_data
+
+
+def calculateDistances(measurement, calc_type='complex', interpolation=None, multi_max=True, **kwargs):
     extra_data = dict()
     maxima = list()
 
     fft_bins = kwargs.get('fft_bins', DEFAULT_FFT_LEN)
     dc_threshold = kwargs.get('dc_threshold', DEFAULT_DC_TRESHOLD)
+    min_rel_max = kwargs.get('min_rel_max', DEFAULT_MIN_REL_MAX)
 
     fft_result, fft_extras = calc_fft_spectrum(measurement, calc_type, fft_bins)
 
     # search maxima
-    # TODO implement multi maxima handling
-    bin_pos = np.argmax(fft_result)
-    bin_value = np.max(fft_result)
-
-    # interpolate spectrum around maxima
-    if interpolation:
-        bin_pos, bin_value = _interpolate_maxima_position(fft_result,
-                                                          bin_pos,
-                                                          mode=interpolation)
-
-    if _in_dc_threshold(bin_pos, dc_threshold, fft_bins):
-        # block positions around 0
-        norm_bin_pos = np.nan
-        extra_data['dqi'] = 0
-        distance = np.nan
+    if multi_max:
+        for max_pos in argrelmax(fft_result)[0]:
+            max_value = fft_result[max_pos]
+            if max_value > min_rel_max:
+                maximum = max_pos, max_value
+                maxima.append(maximum)
     else:
-        # normalize bin position
-        fft_length = len(fft_result)
-        norm_bin_pos = _normalize_bin_pos(bin_pos, fft_length)
-        # store bin value as dqi
-        extra_data['dqi'] = bin_value
-        # calculate distance from bin position
-        if calc_type == 'real':
-            # real fft calculation reduces d_max to the half
-            distance = _slope_to_dist(norm_bin_pos, half_d_max=True)
-        elif calc_type == 'complex':
-            distance = _slope_to_dist(norm_bin_pos)
+        maximum = np.argmax(fft_result), np.max(fft_result)
+        maxima.append(maximum)
 
-    maximum = bin_pos, bin_value
-    maxima.append(maximum)
+    # import ipdb; ipdb.set_trace()
+    distances = list()
+    dqis = list()
+    for idx, maximum in enumerate(maxima):
+        bin_pos, bin_value = maximum
+        # interpolate spectrum around maxima
+        if interpolation:
+            bin_pos, bin_value = _interpolate_maxima_position(fft_result,
+                                                              bin_pos,
+                                                              mode=interpolation)
+            # update maximum with interpolation data
+            maxima[idx] = bin_pos, bin_value
 
-    # subtract antenna offsets if provided
-    distance = substract_provided_offsets(measurement, distance)
+        if _in_dc_threshold(bin_pos, dc_threshold, fft_bins):
+            # block positions around 0
+            norm_bin_pos = np.nan
+            dqi = 0
+            distance = np.nan
+        else:
+            # normalize bin position
+            fft_length = len(fft_result)
+            norm_bin_pos = _normalize_bin_pos(bin_pos, fft_length)
+            # store bin value as dqi
+            dqi = bin_value
+            # calculate distance from bin position
+            if calc_type == 'real':
+                # real fft calculation reduces d_max to the half
+                distance = _slope_to_dist(norm_bin_pos, half_d_max=True)
+            elif calc_type == 'complex':
+                distance = _slope_to_dist(norm_bin_pos)
+
+        # subtract antenna offsets if provided
+        distance = substract_provided_offsets(measurement, distance)
+        dqis.append(dqi)
+        distances.append(distance)
 
     # store extra data of FFT
     extra_data['fft'] = fft_result
     extra_data.update(fft_extras)
     # store maxima in extra_data
     extra_data['maxima'] = maxima
+    # store dqis in extra_data
+    extra_data['dqis'] = dqis
 
-    return distance, extra_data
+    return distances, extra_data
 
 
 def _in_dc_threshold(bin_pos, dc_threshold, fft_bins):
