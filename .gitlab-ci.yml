@@ -1,6 +1,6 @@
 before_script:
   - apt-get update -qy
-  - apt-get install -y python3 python3-setuptools python3-certifi python3-yaml python3-numpy python3-serial python3-nose python3-coverage
+  - apt-get install -y python3 python3-setuptools python3-certifi python3-yaml python3-numpy python3-serial python3-nose python3-coverage python3-scipy
 
 test_library:
   stage: test

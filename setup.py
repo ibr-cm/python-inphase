@@ -11,7 +11,8 @@ setup(name='inphase',
       install_requires=[
           'numpy',
           'pyserial',
-          'PyYAML'
+          'PyYAML',
+          'scipy'
       ],
       zip_safe=False,
       test_suite='nose.collector',
