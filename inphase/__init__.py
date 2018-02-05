@@ -16,3 +16,4 @@ from .measurementmodifier import MRLAInterpolator
 from .measurementmodifier import CutoffDecimator
 from .measurementmodifier import PMUNoise
 from . import constants
+from . import localization
