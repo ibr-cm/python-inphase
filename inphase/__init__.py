@@ -10,6 +10,7 @@ from .measurementprovider import SerialMeasurementProvider
 from .measurementprovider import BinaryFileMeasurementProvider
 from .measurementprovider import InPhaseBridgeMeasurementProvider
 from .measurementprovider import YAMLMeasurementProvider
+from .measurementprovider import SawtoothMeasurementProvider
 from .measurementmodifier import MRLADecimator
 from .measurementmodifier import MRLAInterpolator
 from .measurementmodifier import CutoffDecimator
