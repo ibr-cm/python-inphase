@@ -17,7 +17,7 @@ import scipy
 # Seatle
 # world = (-2500, 1500, -750, 2200, 300, 0)
 # hall
-world = (-2000, 1000, -250, 1500, 700, 0)
+# world = (-2000, 1000, -250, 1500, 700, 0)
 
 
 class World:
@@ -41,22 +41,21 @@ class Particle:
     Particles can move around (they move faster when their position is less likely).
     """
 
-    def __init__(self, world: World):
-        # initialize the particle with a random position in the bounds of the given world
-        x = np.random.uniform(world.dimensions_min[0], world.dimensions_max[0])
-        y = np.random.uniform(world.dimensions_min[1], world.dimensions_max[1])
-        z = np.random.uniform(world.dimensions_min[2], world.dimensions_max[2])
-        self.position = np.array((x, y, z))
+    def __init__(self, position, weight, world: World):
+        # initialize the particles with a random position in the bounds of the given world
+        self.position = position
+        self.position[0] = np.random.uniform(world.dimensions_min[0], world.dimensions_max[0])
+        self.position[1] = np.random.uniform(world.dimensions_min[1], world.dimensions_max[1])
+        self.position[2] = np.random.uniform(world.dimensions_min[2], world.dimensions_max[2])
         self.world = world
-
-        self.weight = 0.5
+        self.weight = weight
 
     def reweight(self, anchor_position, distance, sigma):
         # calculate the distance between current particle position and anchor
         dist = np.linalg.norm(anchor_position - self.position)
         # calculate the weight based on the difference between the measured distance
         # and the current distance of the particle from the anchor
-        self.weight = scipy.stats.norm.pdf(distance, loc=dist, scale=sigma)
+        self.weight[0] = scipy.stats.norm.pdf(distance, loc=dist, scale=sigma)  # use array index to not overwrite the pointer with scalar value
 
     def setPosition(self, x, y, z):
         self.position[0] = float(x)
@@ -65,16 +64,11 @@ class Particle:
 
     def move(self, sigma):
         # the particle moves a bit randomly
-        self.position += np.random.normal(loc=sigma, size=3)
+        self.position[:] += np.random.normal(loc=sigma, size=3)
 
         # make sure it does not leave the world
-        self.position = np.minimum(self.position, self.world.dimensions_max)
-        self.position = np.maximum(self.position, self.world.dimensions_min)
-
-    def copy(self):
-        p = Particle(self.world)
-        p.setPosition(self.position[0], self.position[1], self.position[2])
-        return p
+        self.position[:] = np.minimum(self.position, self.world.dimensions_max)
+        self.position[:] = np.maximum(self.position, self.world.dimensions_min)
 
     def __repr__(self):
         return '[x=%.1f, y=%.1f, z=%.1f, w=%.5f]' % (self.position[0], self.position[1], self.position[2], self.weight)
@@ -89,12 +83,18 @@ class ParticleFilter:
         self.sigma_mesasurement = sigma_mesasurement
 
         # initialize particles
-        self.particles = list()
-        for i in range(self.particle_count):
-            p = Particle(world)
-            self.particles.append(p)
+        self.positions = np.zeros((particle_count, 3))  # holds the positions of all particles
+        self.weights = np.zeros((particle_count, 1))    # holds the weights of all particles
+        self.particles = list()                       # holds the particle objects themselves
+        self.createParticles()
 
         self.tag_position = np.array((0.0, 0.0, 0.0))
+
+    def createParticles(self):
+        for i in range(self.particle_count):
+            # this hands points to the full array
+            p = Particle(self.positions[i], self.weights[i], self.world)
+            self.particles.append(p)
 
     def resample(self, probabilities):
         """Resamples the particles
@@ -104,62 +104,48 @@ class ParticleFilter:
         # draw particles based on their probabilities
         drawn = np.random.multinomial(self.particle_count, probabilities)  # each element of the array tells how often that index was drawn
 
-        # create a new list of particles for the next iteration
-        # reuse old particles if possible
-        new_particles = list()
-        for count, p in zip(drawn, self.particles):
-            if count == 0:
-                # do nothing as the particle is not needed anymore
-                # it will die here
-                continue
-            else:
-                new_particles.append(p)  # use particle again, it got drawn at least once
-                for _ in range(1, count):  # this loop only iterates if count is > 1
-                    # the particle got drawn multiple times
-                    # it is duplicated
-                    new_particles.append(p.copy())
+        # make an array which contains the drawn positions the correct number of times
+        new_positions = np.repeat(self.positions, drawn, 0)
 
-        self.particles = new_particles
+        # set the particles positions to the new ones
+        self.positions[:, :] = new_positions
 
     def tick(self, anchor_pos, distance, dqf):
-        weights = list()  # this holds the weights of all particles
 
-        # process all particles
-        for p in self.particles:
+        ###################
+        # prediction step #
+        ###################
 
-            ###################
-            # prediction step #
-            ###################
+        # move the particles a bit
+        self.positions += np.random.normal(loc=self.sigma_prediction)
 
-            # move the particle a bit
-            p.move(self.sigma_prediction)
+        ##################
+        # weighting step #
+        ##################
 
-            ##################
-            # weighting step #
-            ##################
-
-            # calculate the particle's weight
-            p.reweight(anchor_pos, distance, self.sigma_mesasurement)
-            # append to weight list
-            weights.append(p.weight)
+        # calculate the distance between current particle positions and anchor
+        vectors = self.positions - anchor_pos
+        dists = np.linalg.norm(vectors, axis=1)
+        # calculate the weight based on the difference between the measured distance
+        # and the current distance of the particle from the anchor
+        self.weights[:, 0] = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)  # use array index to not overwrite the pointer with scalar value
 
         # calculate probabities from weights (the sum must be 1.0)
-        weights = np.array(weights)
-        probabilities = weights / np.sum(weights)  # sum of weights is now 1
+        probabilities = self.weights / np.sum(self.weights)  # sum of weights is now 1
 
         # calculate the average tags position based on the particles and their probabilities
         new_tag_position = np.array((0.0, 0.0, 0.0))  # reset tag position
         for probability, p in zip(probabilities, self.particles):
-            # new_tag_position += probability * p.position
-            new_tag_position += p.position
-        new_tag_position /= len(self.particles)
+            new_tag_position += probability * p.position
+            # new_tag_position += p.position
+        # new_tag_position /= len(self.particles)
         self.tag_position = new_tag_position
 
         ###################
         # resampling step #
         ###################
 
-        self.resample(probabilities)
+        self.resample(probabilities[:, 0])
 
         ###################
         # adaptation step #
