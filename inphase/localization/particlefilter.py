@@ -57,6 +57,9 @@ class ParticleFilter:
         self.tag_position = np.array((0.0, 0.0, 0.0))
         self.particle_quality = 0
 
+    def __str__(self):
+        return "(%.0f, %.0f, %.0f) q=%.3f" % (self.tag_position[0], self.tag_position[1], self.tag_position[2], self.particle_quality)
+
     def randomizeParticles(self):
         """Puts particles into random positions on the map to restart the algorithm
         """
