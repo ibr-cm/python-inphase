@@ -117,7 +117,7 @@ class ParticleFilter:
         ###################
 
         # move the particles a bit
-        self.positions += np.random.normal(loc=self.sigma_prediction)
+        self.positions += np.random.normal(scale=self.sigma_prediction)
 
         ##################
         # weighting step #

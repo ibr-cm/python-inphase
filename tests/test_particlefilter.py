@@ -72,17 +72,14 @@ class UnitTest(unittest.TestCase):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
         particlefilter = inphase.localization.particlefilter.ParticleFilter(world)
 
-        for _ in range(10):
+        for _ in range(50):
             particlefilter.tick([500, 100, 200], 0, 1000)
-            print(particlefilter.tag_position)
             particlefilter.tick([100, 100, 200], 400, 1000)
-            print(particlefilter.tag_position)
             particlefilter.tick([500, 100, -300], 500, 1000)
-            print(particlefilter.tag_position)
 
-        self.assertAlmostEqual(particlefilter.tag_position[0], 572.33975, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[1], 141.14347, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[2], 279.74124, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[0], 536.62901, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[1], 118.41677, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[2], 222.79566, 5)
 
 
 if __name__ == "__main__":
