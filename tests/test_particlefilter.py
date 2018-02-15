@@ -21,8 +21,9 @@ class UnitTest(unittest.TestCase):
         np.testing.assert_array_equal(world.dimensions_max, np.array([1000, 1500, 700]))
 
     def test_ParticleFilterImplementation(self):
+        particle_count = 10000
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
-        particlefilter = inphase.localization.particlefilter.ParticleFilter(world, particle_count=10000)
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world, particle_count=particle_count)
 
         # check if particles are inside world
         for position in particlefilter.positions:
@@ -38,6 +39,12 @@ class UnitTest(unittest.TestCase):
             for pos, wmin, wmax in zip(position, world.dimensions_min, world.dimensions_max):
                 self.assertGreaterEqual(pos, wmin)
                 self.assertLessEqual(pos, wmax)
+
+        # weight particles
+        particlefilter.weight([500, 100, 200], 0, 1000)
+
+        self.assertEqual(np.sum(particlefilter.weights), 1)  # sum must be 1
+        self.assertEqual(len(particlefilter.weights), particle_count)  # must match the number of particles
 
     def test_ParticleFilterLocalization(self):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
