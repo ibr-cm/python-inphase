@@ -89,6 +89,7 @@ class ParticleFilter:
         self.createParticles()
 
         self.tag_position = np.array((0.0, 0.0, 0.0))
+        self.particle_quality = 0
 
     def createParticles(self):
         for i in range(self.particle_count):
@@ -152,8 +153,7 @@ class ParticleFilter:
         ###################
 
         # get the sum of the 100 best fitting particle's probabilities
-        particle_quality = np.sum(probabilities[np.argsort(probabilities)[-100:]])
-        print(particle_quality)
+        self.particle_quality = np.sum(probabilities[np.argsort(probabilities)[-100:]]) / 100 * self.particle_count
 
         return  # do not do adaptation for now, it needs fine tuning
 

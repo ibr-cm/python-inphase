@@ -80,6 +80,7 @@ class UnitTest(unittest.TestCase):
         self.assertAlmostEqual(particlefilter.tag_position[0], 536.62901, 5)
         self.assertAlmostEqual(particlefilter.tag_position[1], 118.41677, 5)
         self.assertAlmostEqual(particlefilter.tag_position[2], 222.79566, 5)
+        self.assertAlmostEqual(particlefilter.particle_quality, 1.01673, 5)
 
 
 if __name__ == "__main__":
