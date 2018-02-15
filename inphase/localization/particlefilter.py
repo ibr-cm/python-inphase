@@ -74,7 +74,7 @@ class ParticleFilter:
         self.positions += np.random.normal(scale=self.sigma_prediction)
 
         # ensure all particles stay inside the map
-        self.positions = np.clip(self.positions, self.world.dimensions_min, self.world.dimensions_max)
+        np.clip(self.positions, self.world.dimensions_min, self.world.dimensions_max, out=self.positions)
 
     def weight(self, anchor_pos, distance, dqf):
         """Calculates the weights of the particles
@@ -88,7 +88,7 @@ class ParticleFilter:
         dists = np.linalg.norm(vectors, axis=1)
         # calculate the weight based on the difference between the measured distance
         # and the current distance of the particle from the anchor
-        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)  # use array index to not overwrite the pointer with scalar value
+        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)
 
         # normalize weights (the sum must be 1.0)
         self.weights /= np.sum(self.weights)  # sum of weights is now 1
@@ -110,10 +110,7 @@ class ParticleFilter:
         drawn = np.random.multinomial(self.particle_count, self.weights)  # each element of the array tells how often that index was drawn
 
         # make an array which contains the drawn positions the correct number of times
-        new_positions = np.repeat(self.positions, drawn, 0)
-
-        # set the particles positions to the new ones
-        self.positions[:, :] = new_positions
+        self.positions = np.repeat(self.positions, drawn, 0)
 
     def adapt(self):
         if self.particle_quality > 0.2:
