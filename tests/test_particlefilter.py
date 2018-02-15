@@ -55,10 +55,10 @@ class UnitTest(unittest.TestCase):
             particlefilter.tick([100, 100, 200], 400, 1000)
             particlefilter.tick([500, 100, -300], 500, 1000)
 
-        self.assertAlmostEqual(particlefilter.tag_position[0], 529.49414, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[1], 135.80492, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[2], 232.58776, 5)
-        self.assertAlmostEqual(particlefilter.particle_quality, 1.01744, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[0], 498.48, 2)
+        self.assertAlmostEqual(particlefilter.tag_position[1], 86.62, 2)
+        self.assertAlmostEqual(particlefilter.tag_position[2], 204.07, 2)
+        self.assertAlmostEqual(particlefilter.particle_quality, 1.01062, 5)
 
 
 if __name__ == "__main__":

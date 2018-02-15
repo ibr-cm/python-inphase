@@ -71,7 +71,7 @@ class ParticleFilter:
         Particles move randomly so they can find better fitting positions
         """
         # MOVE!
-        self.positions += np.random.normal(scale=self.sigma_prediction)
+        self.positions += np.random.normal(scale=self.sigma_prediction, size=(self.particle_count, 3))
 
         # ensure all particles stay inside the map
         np.clip(self.positions, self.world.dimensions_min, self.world.dimensions_max, out=self.positions)
