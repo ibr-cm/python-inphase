@@ -20,55 +20,26 @@ class UnitTest(unittest.TestCase):
         np.testing.assert_array_equal(world.dimensions_min, np.array([-2000, -250, 0]))
         np.testing.assert_array_equal(world.dimensions_max, np.array([1000, 1500, 700]))
 
-    def test_Particle(self):
+    def test_ParticleFilterImplementation(self):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world, particle_count=10000)
 
-        # we have some randomness in particles so we have to test over a lot of them
-        for i in range(10000):
-            p = inphase.localization.particlefilter.Particle(np.zeros(3), np.zeros(1), world)
-
-            # check if particle is inside world after initialization
-            for pos, wmin, wmax in zip(p.position, world.dimensions_min, world.dimensions_max):
+        # check if particles are inside world
+        for position in particlefilter.positions:
+            for pos, wmin, wmax in zip(position, world.dimensions_min, world.dimensions_max):
                 self.assertGreaterEqual(pos, wmin)
                 self.assertLessEqual(pos, wmax)
 
-            # check if particle is inside world after move
-            p.move(5)
-            for pos, wmin, wmax in zip(p.position, world.dimensions_min, world.dimensions_max):
+        # move particles
+        particlefilter.predict()
+
+        # check if particles are inside world after move
+        for position in particlefilter.positions:
+            for pos, wmin, wmax in zip(position, world.dimensions_min, world.dimensions_max):
                 self.assertGreaterEqual(pos, wmin)
                 self.assertLessEqual(pos, wmax)
 
-        # test setPosition
-        p = inphase.localization.particlefilter.Particle(np.zeros(3), np.zeros(1),world)
-        p.setPosition(1, 2, 3)
-        self.assertEqual(p.position[0], 1)
-        self.assertEqual(p.position[1], 2)
-        self.assertEqual(p.position[2], 3)
-
-        # test __repr__
-        self.assertEqual(str(p), '[x=1.0, y=2.0, z=3.0, w=0.00000]')
-
-        # test reweight
-        sigma = 1
-        anchor_position = np.array((1, 2, 3))  # anchor is in the same position as particle
-        distance = 0
-        p.reweight(anchor_position, distance, sigma)
-        self.assertAlmostEqual(p.weight[0], 0.39894, 5)
-
-        anchor_position = np.array((10, -10, 100))
-        distance = 98.15  # anchor is ~98.15 units away from particle
-        p.reweight(anchor_position, distance, sigma)
-        self.assertAlmostEqual(p.weight[0], 0.39894, 5)
-
-        distance = 95  # test with slightly wrong distance
-        p.reweight(anchor_position, distance, sigma)
-        self.assertAlmostEqual(p.weight[0], 0.002768, 5)
-
-        distance = 5  # test with completely wrong distance
-        p.reweight(anchor_position, distance, sigma)
-        self.assertAlmostEqual(p.weight[0], 0.0, 5)
-
-    def test_ParticleFilter(self):
+    def test_ParticleFilterLocalization(self):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
         particlefilter = inphase.localization.particlefilter.ParticleFilter(world)
 
@@ -77,10 +48,10 @@ class UnitTest(unittest.TestCase):
             particlefilter.tick([100, 100, 200], 400, 1000)
             particlefilter.tick([500, 100, -300], 500, 1000)
 
-        self.assertAlmostEqual(particlefilter.tag_position[0], 536.62901, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[1], 118.41677, 5)
-        self.assertAlmostEqual(particlefilter.tag_position[2], 222.79566, 5)
-        self.assertAlmostEqual(particlefilter.particle_quality, 1.01673, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[0], 529.49414, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[1], 135.80492, 5)
+        self.assertAlmostEqual(particlefilter.tag_position[2], 232.58776, 5)
+        self.assertAlmostEqual(particlefilter.particle_quality, 1.01744, 5)
 
 
 if __name__ == "__main__":
