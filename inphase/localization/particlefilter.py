@@ -110,7 +110,12 @@ class ParticleFilter:
         drawn = np.random.multinomial(self.particle_count, self.weights)  # each element of the array tells how often that index was drawn
 
         # make an array which contains the drawn positions the correct number of times
-        self.positions = np.repeat(self.positions, drawn, 0)
+        try:
+            self.positions = np.repeat(self.positions, drawn, 0)
+        except ValueError:
+            # the above line can fail if all particles are highly unlikely and none of them was drawn
+            print('WARNING: Particle Filter needed hard reset!')
+            self.randomizeParticles()
 
     def adapt(self):
         if self.particle_quality > 0.2:
