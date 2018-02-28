@@ -71,7 +71,6 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
         maximum = np.argmax(fft_result), np.max(fft_result)
         maxima.append(maximum)
 
-    # import ipdb; ipdb.set_trace()
     distances = list()
     dqis = list()
     for idx, maximum in enumerate(maxima):
