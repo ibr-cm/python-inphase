@@ -26,7 +26,7 @@ class World:
     A world is a cube. All localization must be done within this cube's volume.
     """
 
-    def __init__(self, x_dim: tuple, y_dim: tuple, z_dim: tuple):
+    def __init__(self, x_dim, y_dim, z_dim=(0, 0)):
         # minimum corner of the cube
         self.dimensions_min = np.array((x_dim[0], y_dim[0], z_dim[0]))
         # maximum corner of the cube
@@ -43,18 +43,23 @@ class ParticleFilter:
     Particles are moved around to find better positions.
     """
 
-    def __init__(self, world, particle_count=5000, sigma_prediction=5, sigma_mesasurement=300):
+    def __init__(self, world, particle_count=5000, sigma_prediction=5, sigma_mesasurement=300, dimensions=3):
         self.world = world
         self.particle_count = particle_count
         self.sigma_prediction = sigma_prediction
         self.sigma_mesasurement = sigma_mesasurement
+        self.dimensions = dimensions
+
+        if self.dimensions == 2:
+            self.world.dimensions_min[2] = 0
+            self.world.dimensions_max[2] = 0
 
         # initialize particles
         self.positions = np.zeros((self.particle_count, 3))  # holds the positions of all particles
         self.weights = np.zeros(self.particle_count)    # holds the weights of all particles
         self.randomizeParticles()
 
-        self.tag_position = np.array((0.0, 0.0, 0.0))
+        self.tag_position = np.zeros(3)
         self.particle_quality = 0
 
         self.anchors = dict()
@@ -75,8 +80,9 @@ class ParticleFilter:
         # MOVE!
         self.positions += np.random.normal(scale=self.sigma_prediction, size=(self.particle_count, 3))
 
-        # ensure all particles stay inside the map
-        np.clip(self.positions, self.world.dimensions_min, self.world.dimensions_max, out=self.positions)
+        # set third axis to 0 if run in 2D mode
+        if self.dimensions == 2:
+            self.positions[:, 2] = 0
 
     def weight(self, anchor_id, anchor_pos, distance, dqf):
         """Calculates the weights of the particles
@@ -86,11 +92,15 @@ class ParticleFilter:
         The sum of the weights is always 1, so they are also probabilities for the different particles.
         """
         # calculate the distance between current particle positions and anchor
+        if len(anchor_pos) == 2:
+            anchor_pos = np.array(anchor_pos + [0])  # add third dimension
+        if self.dimensions == 2:
+            anchor_pos[2] = 0
         vectors = self.positions - anchor_pos
         dists = np.linalg.norm(vectors, axis=1)
         # calculate the weight based on the difference between the measured distance
         # and the current distance of the particle from the anchor
-        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)
+        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement * 1 / dqf)
 
         # normalize weights (the sum must be 1.0)
         self.weights /= np.sum(self.weights)  # sum of weights is now 1
