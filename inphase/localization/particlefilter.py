@@ -7,8 +7,6 @@ This module provides a particle filter for localization.
 import numpy as np
 import scipy
 
-import time
-
 #############################
 # Dimension of the used map #
 #############################
@@ -45,7 +43,7 @@ class ParticleFilter:
     Particles are moved around to find better positions.
     """
 
-    def __init__(self, world, particle_count=5000, sigma_prediction=5, sigma_mesasurement=300, weighting='classic', max_seconds=2):
+    def __init__(self, world, particle_count=5000, sigma_prediction=5, sigma_mesasurement=300):
         self.world = world
         self.particle_count = particle_count
         self.sigma_prediction = sigma_prediction
@@ -60,18 +58,6 @@ class ParticleFilter:
         self.particle_quality = 0
 
         self.anchors = dict()
-
-        self.anchor_position = None
-        self.distance = None
-        self.dqf = None
-
-        self.max_seconds = max_seconds
-
-        # choose weighting function
-        if weighting == 'classic':
-            self.weight = self.weight_classic
-        elif weighting == 'multiple_anchors':
-            self.weight = self.weight_multiple_anchors
 
     def __str__(self):
         return "(%.0f, %.0f, %.0f) q=%.3f" % (self.tag_position[0], self.tag_position[1], self.tag_position[2], self.particle_quality)
@@ -92,7 +78,7 @@ class ParticleFilter:
         # ensure all particles stay inside the map
         np.clip(self.positions, self.world.dimensions_min, self.world.dimensions_max, out=self.positions)
 
-    def weight_classic(self):
+    def weight(self, anchor_id, anchor_pos, distance, dqf):
         """Calculates the weights of the particles
 
         The weight is the metric that indicates how well the particle's position fits the measured distances.
@@ -100,40 +86,11 @@ class ParticleFilter:
         The sum of the weights is always 1, so they are also probabilities for the different particles.
         """
         # calculate the distance between current particle positions and anchor
-        vectors = self.positions - self.anchor_position
+        vectors = self.positions - anchor_pos
         dists = np.linalg.norm(vectors, axis=1)
         # calculate the weight based on the difference between the measured distance
         # and the current distance of the particle from the anchor
-        self.weights = scipy.stats.norm.pdf(self.distance, loc=dists, scale=self.sigma_mesasurement)
-
-        # normalize weights (the sum must be 1.0)
-        self.weights /= np.sum(self.weights)  # sum of weights is now 1
-
-    def weight_multiple_anchors(self):
-        """Calculates the weight of the particles based on multiple anchors
-
-        """
-        current_time = time.time()
-        self.weights = np.zeros(self.particle_count)  # reset weights
-        for key, anchor in self.anchors.items():
-            # calculate the distance between current particle positions and anchor
-            vectors = self.positions - anchor['position']
-            dists = np.linalg.norm(vectors, axis=1)
-            # calculate the weight based on the difference between the measured distance
-            # and the current distance of the particle from the anchor
-            distance_prob = scipy.stats.norm.pdf(anchor['distance'], loc=dists, scale=self.sigma_mesasurement)
-
-            if self.max_seconds == 0:
-                time_factor = 1
-            else:
-                self.max_seconds = 2
-                delta = (current_time - anchor['time'])
-                time_factor = -1 / self.max_seconds * delta
-                time_factor = min(0, time_factor)
-
-            dqf_factor = anchor['dqf']
-
-            self.weights += distance_prob * time_factor * dqf_factor
+        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)
 
         # normalize weights (the sum must be 1.0)
         self.weights /= np.sum(self.weights)  # sum of weights is now 1
@@ -141,7 +98,9 @@ class ParticleFilter:
     def localize(self):
         """Calculates the average tags position based on the particles and their weights
         """
-        self.tag_position = np.dot(self.weights, self.positions)
+        #self.tag_position = np.dot(self.weights, self.positions)
+        #self.tag_position = np.median(self.positions, 0)
+        self.tag_position = np.average(self.positions, 0)
 
         # get the sum of the 100 best fitting particle's weights
         self.particle_quality = np.sum(self.weights[np.argsort(self.weights)[-100:]]) / 100 * self.particle_count
@@ -181,24 +140,10 @@ class ParticleFilter:
             self.particle_count = 15000
         print("new parameters: particle_count=%s, sigma_prediction=%s" % (self.particle_count, self.sigma_prediction))
 
-    def addDistance(self, anchor_id, anchor_pos, distance, dqf):
-        self.anchor_position = anchor_pos
-        self.distance = distance
-        self.dqf = dqf
-
-        self.anchors[anchor_id] = {
-            'position': anchor_pos,
-            'distance': distance,
-            'dqf': dqf,
-            'time': time.time()
-        }
-
-    def tick(self):
-        if not self.anchor_position:
-            return
+    def tick(self, anchor_id, anchor_pos, distance, dqf):
         self.predict()
-        self.weight()
-        self.localize()
+        self.weight(anchor_id, anchor_pos, distance, dqf)
         self.resample()
+        self.localize()
         # do not do adaptation for now, it needs fine tuning
         # self.adapt()
