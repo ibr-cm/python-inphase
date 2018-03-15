@@ -50,16 +50,23 @@ class UnitTest(unittest.TestCase):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
         particlefilter = inphase.localization.particlefilter.ParticleFilter(world)
 
+        max_error = 20  # we tolerate 2 centimeter error for this test
 
         for _ in range(50):
             particlefilter.tick('Anchor 1', [500, 100, 200], 0, 1000)
             particlefilter.tick('Anchor 2', [100, 100, 200], 400, 1000)
             particlefilter.tick('Anchor 3', [500, 100, -300], 500, 1000)
 
-        self.assertAlmostEqual(particlefilter.tag_position[0], 506.97, 2)
-        self.assertAlmostEqual(particlefilter.tag_position[1], 97.02, 2)
-        self.assertAlmostEqual(particlefilter.tag_position[2], 197.82, 2)
-        self.assertAlmostEqual(particlefilter.particle_quality, 1.01996, 5)
+        self.assertGreaterEqual(particlefilter.tag_position[0], 500 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[0], 500 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[1], 100 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[1], 100 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[2], 200 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[2], 200 + max_error)
+
+        self.assertGreaterEqual(particlefilter.particle_quality, 0.95)
 
 
 if __name__ == "__main__":
