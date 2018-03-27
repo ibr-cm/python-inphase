@@ -81,11 +81,19 @@ def decodeBinary(data, timestamp=True):
 
         samples = list()
 
-        for freq, values in zip(measurement_data['frequencies'], measurement_data['values']):
-            samples.append(Sample({
-                'frequency': freq,
-                'pmu_values': values
-            }))
+        if 'rssi' in measurement_data:
+            for freq, values, rssi in zip(measurement_data['frequencies'], measurement_data['values'], measurement_data['rssi']):
+                samples.append(Sample({
+                    'frequency': freq,
+                    'pmu_values': values,
+                    'rssi': rssi
+                }))
+        else:
+            for freq, values in zip(measurement_data['frequencies'], measurement_data['values']):
+                samples.append(Sample({
+                    'frequency': freq,
+                    'pmu_values': values
+                }))
 
         measurement = Measurement({
             'dqi': measurement_data['dist_quality'],
@@ -117,6 +125,8 @@ def _unescape(frame):
 
 
 def _parsePacket(frame):
+    protocol_version = None  # keeps track of the protocol version of the received frame
+
     # remove frame delimiter
     frame = frame[1:-1]
 
@@ -131,12 +141,28 @@ def _parsePacket(frame):
         return None
 
     samples, step = unpack(unpack_str, frame[0:calcsize(unpack_str)])
+    if samples <= 0:
+        logger.error("invalid number of samples/protocol version: %d", samples)
+        return None
+    elif samples <= 4:
+        protocol_version = 1
+    elif samples == 5:
+        samples = 1
+        protocol_version = 2
+    elif samples > 5:
+        logger.error("unknown protocol version, version field is: %d", samples)
+        return None
+
     frequency_start, measurements, reflector_address, dist_meter, dist_centimeter, dist_quality, status = unpack(unpack_str_2, frame[calcsize(unpack_str):calcsize(unpack_str) + calcsize(unpack_str_2)])
 
     if (step == 0):  # by definition 0 step size is 0.5
         step = 0.5
 
-    expected_frame_length = measurements * samples + minimum_frame_length
+    if protocol_version == 1:
+        expected_frame_length = measurements * samples + minimum_frame_length
+    elif protocol_version == 2:
+        # there is one extra RSSI value per sample in version 2
+        expected_frame_length = measurements * samples * 2 + minimum_frame_length
 
     if (expected_frame_length != len(frame)):
         logger.error("frame invalid! length was: %d, expected length is: %d", len(frame), expected_frame_length)
@@ -159,11 +185,17 @@ def _parsePacket(frame):
         data['frequencies'].append(frequency_start + i * step)
 
     data['values'] = list()
-    values = unpack('>' + str(measurements * samples) + 'b', frame[minimum_frame_length:])
+    if protocol_version == 1:
+        values = unpack('>' + str(measurements * samples) + 'b', frame[minimum_frame_length:])
+    elif protocol_version == 2:
+        data['rssi'] = list()
+        values = unpack('>' + str(measurements * samples) + 'b' + str(measurements) + 'B', frame[minimum_frame_length:])
 
     for i in range(measurements):
         data['values'].append(list())
         for j in range(samples):
             data['values'][i].append(values[i * samples + j])
+        if protocol_version == 2:
+            data['rssi'].append([values[measurements * samples + i]])
 
     return data
