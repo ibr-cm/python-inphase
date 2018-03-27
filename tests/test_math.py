@@ -19,6 +19,7 @@ class UnitTest(unittest.TestCase):
     def setUp(self):
         # load sample measurement
         self.e = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/experiment.yml'))
+        self.e_rssi = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/experiment_rssi.yml'))
 
     def test_calc_fft_spectrum(self):
         fft_bins = 1024
@@ -44,7 +45,18 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(extra_data['complex_signal'].size,
                          len(self.e.measurements[0]['samples']))
         self.assertEqual(fft.size, int(fft_bins))
+        # test complex_with_magnitude
+        fft, extra_data = calc_fft_spectrum(self.e_rssi.measurements[0],
+                                            calc_type='complex_with_magnitude',
+                                            fft_bins=fft_bins)
 
+        self.assertEqual(np.argmax(fft), 9)
+        self.assertAlmostEqual(np.max(fft), 0.00649, places=5)
+        self.assertEqual(extra_data['complex_signal'].size,
+                         len(self.e.measurements[0]['samples']))
+        self.assertEqual(extra_data['complex_signal'].size,
+                         len(self.e.measurements[0]['samples']))
+        self.assertEqual(fft.size, int(fft_bins))
 
     def test_substract_provided_offset(self):
         OFFSET = 1000
@@ -76,6 +88,15 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
+    def test_calculateDistanceComplexWithMagnitude(self):
+        fft_bins = 1024
+        distance, extra_data = calculateDistance(self.e_rssi.measurements[0], calc_type='complex_with_magnitude', fft_bins=fft_bins)
+
+        self.assertAlmostEqual(distance, 2634.89465, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 0.00649, places=5)
+        self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
+        self.assertEqual(extra_data['fft'].size, int(fft_bins))
+
     def test_calculateDistanceRealInterpolated(self):
         clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth_low_dist.yml'))
         fft_bins = 1024
@@ -97,6 +118,16 @@ class UnitTest(unittest.TestCase):
 
         self.assertAlmostEqual(distance, 150095.021346, places=5)
         self.assertAlmostEqual(extra_data['dqi'], 199.89610, places=5)
+
+    def test_calculateDistanceComplexWithMagnitudeInterpolated(self):
+        fft_bins = 1024
+        with self.assertRaises(NotImplementedError):
+            distance, extra_data = calculateDistance(self.e_rssi.measurements[0], calc_type='complex_with_magnitude', fft_bins=fft_bins, interpolation='unknown')
+
+        distance, extra_data = calculateDistance(self.e_rssi.measurements[0], calc_type='complex_with_magnitude', fft_bins=fft_bins, interpolation='parabolic')
+
+        self.assertAlmostEqual(distance, 2722.81638, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 0.00652, places=5)
 
     def test_calculateDistanceComplexOddFFT(self):
         clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth.yml'))

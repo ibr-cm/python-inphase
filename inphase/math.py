@@ -101,6 +101,8 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
                 distance = _slope_to_dist(norm_bin_pos, half_d_max=True)
             elif calc_type == 'complex':
                 distance = _slope_to_dist(norm_bin_pos)
+            elif calc_type == 'complex_with_magnitude':
+                distance = _slope_to_dist(norm_bin_pos)
 
         # subtract antenna offsets if provided
         distance = substract_provided_offsets(measurement, distance)
@@ -143,14 +145,21 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
     # prepare lists for calculations
     frequencies = list()
     pmu_values = list()
+    rssi = list()
 
     for sample in measurement['samples']:
         frequencies.append(sample['frequency'])
         pmu_values.append(sample['pmu_values'])
+        if 'rssi' in sample:
+            rssi.append(sample['rssi'])
 
-    # take mean of values as they might contain more than one pmu value per
-    # frequency
+    # take mean of values as they might contain more than one pmu value per frequency
+    # TODO: this is a bad idea, phase angles have to be averaged in the complex plane!
     means = np.mean(pmu_values[:], 1)
+
+    # take mean of rssi samples
+    if rssi:
+        rssi = np.mean(rssi[:], 1)
 
     # use fft variant to calculate spectrum
 
@@ -169,6 +178,33 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
 
         # store intermidiate result as extra
         extra_data['autocorrelation'] = autocorr_result
+
+    elif calc_type == 'complex_with_magnitude':
+        # map to 2*Pi
+        means = means / 256.0 * 2 * np.pi
+
+        # convert rssi values to dBm according to the AT86RF233 datasheet
+        rssi = -94 + 3 * rssi
+
+        # convert dBm to milliwatt
+        rssi = 10 ** (rssi / 10)
+
+        # scale so -10 dBm (maximum possible value) is 1
+        rssi /= 0.1
+
+        complex_signal = rssi * np.exp(1j * means)
+
+        # calculate fft
+        fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
+
+        # store intermidiate result as extra
+        extra_data['complex_signal'] = complex_signal
+
+        if fft_bins % 2:
+            # we have an odd number of bins
+            # maximum positive and minimum negative frequency are aliases,
+            # remove the minumum negative frequency
+            fft_result = np.delete(fft_result, int(fft_bins / 2))
 
     elif calc_type == 'complex':
         # map to 2*Pi
