@@ -73,7 +73,64 @@ class ParticleFilter:
     def randomizeParticles(self):
         """Puts particles into random positions on the map to restart the algorithm
         """
-        self.positions = np.random.uniform(self.world.dimensions_min, self.world.dimensions_max, (self.particle_count, 3))
+        if False:
+            self.positions = np.random.uniform(self.world.dimensions_min, self.world.dimensions_max, (self.particle_count, 3))
+
+            # reset weights
+            self.weights = np.ones(self.particle_count) / self.particle_count
+
+            # set the last time the particles moved
+            self.last_timestamp = time.time()
+
+            return
+
+        # volume/area of the world
+        x_range = self.world.dimensions_max[0] - self.world.dimensions_min[0]
+        y_range = self.world.dimensions_max[1] - self.world.dimensions_min[1]
+        z_range = self.world.dimensions_max[2] - self.world.dimensions_min[2]
+        volume = x_range * y_range
+        if self.dimensions == 3:
+            volume *= z_range
+
+        # divide volume/area into one box/square per particle
+        volume /= self.particle_count
+
+        # get side length of the volume/area
+        length = volume ** (1 / self.dimensions)
+
+        # number of particles placed along each axis
+        spaces_x = int(x_range / length)
+        spaces_y = int(y_range / length)
+        spaces_z = int(z_range / length)
+
+        # number of particles placed on grid
+        particles = spaces_x * spaces_y * spaces_z
+
+        # number of particles to place randomly to get to correct amount of particles
+        place_randomly = self.particle_count - particles
+
+        # x y z coordinates of grid positions
+        x_coordinates = np.linspace(self.world.dimensions_min[0], self.world.dimensions_max[0], spaces_x, endpoint=False)
+        y_coordinates = np.linspace(self.world.dimensions_min[1], self.world.dimensions_max[1], spaces_y, endpoint=False)
+        z_coordinates = np.linspace(self.world.dimensions_min[2], self.world.dimensions_max[2], spaces_z, endpoint=False)
+
+        # array with all particle positions on the grid
+        positions = np.array(np.meshgrid(x_coordinates, y_coordinates, z_coordinates)).T.reshape(-1, 3)
+
+        # add some randomness to the position in the range [0, length]
+        positions += np.random.uniform(0, length, (particles, 3))
+
+        # create positions for the other particles that are positioned randomly
+        random_positions = np.random.uniform(self.world.dimensions_min, self.world.dimensions_max, (place_randomly, 3))
+
+        # concatenate grid placed and randomly placed particles
+        self.positions = np.concatenate((positions, random_positions), axis=0)
+
+        # reset weights
+        self.weights = np.ones(self.particle_count) / self.particle_count
+
+        # set the last time the particles moved
+        self.last_timestamp = time.time()
 
     def predict(self, timestamp):
         """Moves particles around
