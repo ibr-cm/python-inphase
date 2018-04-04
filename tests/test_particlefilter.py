@@ -37,7 +37,7 @@ class UnitTest(unittest.TestCase):
                 self.assertLessEqual(pos, wmax)
 
         # move particles
-        particlefilter.predict()
+        particlefilter.predict(None)
 
         # check if particles are still somewhere on the map
         for position in particlefilter.positions:
