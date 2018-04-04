@@ -7,6 +7,8 @@ This module provides a particle filter for localization.
 import numpy as np
 import scipy
 
+import time
+
 #############################
 # Dimension of the used map #
 #############################
@@ -56,7 +58,8 @@ class ParticleFilter:
 
         # initialize particles
         self.positions = np.zeros((self.particle_count, 3))  # holds the positions of all particles
-        self.weights = np.zeros(self.particle_count)    # holds the weights of all particles
+        self.weights = np.ones(self.particle_count) / self.particle_count  # holds the weights of all particles
+        self.last_timestamp = time.time()
         self.randomizeParticles()
 
         self.tag_position = np.zeros(3)
@@ -72,13 +75,22 @@ class ParticleFilter:
         """
         self.positions = np.random.uniform(self.world.dimensions_min, self.world.dimensions_max, (self.particle_count, 3))
 
-    def predict(self):
+    def predict(self, timestamp):
         """Moves particles around
 
         Particles move randomly so they can find better fitting positions
         """
         # MOVE!
-        self.positions += np.random.normal(scale=self.sigma_prediction, size=(self.particle_count, 3))
+        if timestamp is None:
+            self.positions += np.random.normal(scale=self.sigma_prediction, size=(self.particle_count, 3))
+        else:
+            delta = timestamp - self.last_timestamp
+            movement = delta * self.sigma_prediction
+            if movement > 0:
+                # only move if enough time passed so the particles can actually move
+                movement_vectors = np.random.normal(scale=movement, size=(self.particle_count, 3))
+                self.positions += movement_vectors
+            self.last_timestamp = timestamp
 
         # set third axis to 0 if run in 2D mode
         if self.dimensions == 2:
@@ -160,8 +172,8 @@ class ParticleFilter:
             self.particle_count = 15000
         print("new parameters: particle_count=%s, sigma_prediction=%s" % (self.particle_count, self.sigma_prediction))
 
-    def tick(self, anchor_id, anchor_pos, distance, dqf):
-        self.predict()
+    def tick(self, anchor_id, anchor_pos, distance, dqf, timestamp=None):
+        self.predict(timestamp)
         self.weight(anchor_id, anchor_pos, distance, dqf)
         self.resample()
         self.localize()
