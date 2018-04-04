@@ -133,22 +133,20 @@ class ParticleFilter:
         # set the last time the particles moved
         self.last_timestamp = time.time()
 
-    def predict(self, timestamp):
+    def predict(self, delta):
         """Moves particles around
 
         Particles move randomly so they can find better fitting positions
         """
         # MOVE!
-        if timestamp is None:
+        if delta is None:
             self.positions += np.random.normal(scale=self.sigma_prediction, size=(self.particle_count, 3))
         else:
-            delta = timestamp - self.last_timestamp
             movement = delta * self.sigma_prediction
             if movement > 0:
                 # only move if enough time passed so the particles can actually move
                 movement_vectors = np.random.normal(scale=movement, size=(self.particle_count, 3))
                 self.positions += movement_vectors
-            self.last_timestamp = timestamp
 
         # set third axis to 0 if run in 2D mode
         if self.dimensions == 2:
@@ -243,7 +241,12 @@ class ParticleFilter:
         print("new parameters: particle_count=%s, sigma_prediction=%s" % (self.particle_count, self.sigma_prediction))
 
     def tick(self, anchor_id, anchor_pos, distance, dqf, timestamp=None):
-        self.predict(timestamp)
+        if timestamp is None:
+            delta = None
+        else:
+            delta = timestamp - self.last_timestamp
+            self.last_timestamp = timestamp
+        self.predict(delta)
         self.weight(anchor_id, anchor_pos, distance, dqf)
         self.resample()
         self.localize()
