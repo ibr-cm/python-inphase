@@ -185,7 +185,7 @@ class ParticleFilter:
         # normalize weights (the sum must be 1.0)
         self.weights /= np.sum(self.weights)  # sum of weights is now 1
 
-    def localize(self):
+    def localize(self, delta):
         """Calculates the average tags position based on the particles and their weights
         """
         #self.tag_position = np.dot(self.weights, self.positions)
@@ -199,7 +199,15 @@ class ParticleFilter:
 
         self.movement_vector = new_position - self.tag_position
 
-        self.tag_position = new_position
+        #self.tag_position = new_position
+        if delta is None:
+            self.tag_position = new_position
+        elif delta > 1:
+            self.tag_position = new_position
+        elif delta < 0:
+            pass
+        else:
+            self.tag_position = (1 - delta) * self.tag_position + delta * new_position
         #self.tag_position = 0.9 * self.tag_position + 0.1 * new_position
 
         # get the sum of the 100 best fitting particle's weights
@@ -249,6 +257,6 @@ class ParticleFilter:
         self.predict(delta)
         self.weight(anchor_id, anchor_pos, distance, dqf)
         self.resample()
-        self.localize()
+        self.localize(delta)
         # do not do adaptation for now, it needs fine tuning
         # self.adapt()
