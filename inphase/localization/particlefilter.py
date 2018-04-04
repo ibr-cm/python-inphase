@@ -63,6 +63,7 @@ class ParticleFilter:
         self.randomizeParticles()
 
         self.tag_position = np.zeros(3)
+        self.movement_vector = np.zeros(3)
         self.particle_quality = 0
 
         self.anchors = dict()
@@ -191,10 +192,20 @@ class ParticleFilter:
         """
         #self.tag_position = np.dot(self.weights, self.positions)
         #self.tag_position = np.median(self.positions, 0)
-        self.tag_position = np.average(self.positions, 0)
+
+        #self.tag_position = np.average(self.positions, 0)
+
+        fitting_fraction = 0.1
+        fitting_particles = int(self.particle_count * fitting_fraction)
+        new_position = np.median(self.positions[np.argsort(self.weights)[-fitting_particles:]], 0)
+
+        self.movement_vector = new_position - self.tag_position
+
+        self.tag_position = new_position
+        #self.tag_position = 0.9 * self.tag_position + 0.1 * new_position
 
         # get the sum of the 100 best fitting particle's weights
-        self.particle_quality = np.sum(self.weights[np.argsort(self.weights)[-100:]]) / 100 * self.particle_count
+        self.particle_quality = np.sum(self.weights[np.argsort(self.weights)[-fitting_particles:]]) / fitting_particles * self.particle_count
 
     def resample(self):
         """Resamples the particles
