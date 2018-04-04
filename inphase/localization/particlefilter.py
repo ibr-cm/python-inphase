@@ -112,7 +112,9 @@ class ParticleFilter:
         dists = np.linalg.norm(vectors, axis=1)
         # calculate the weight based on the difference between the measured distance
         # and the current distance of the particle from the anchor
-        self.weights = scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)
+        old_factor = (1 - dqf)
+        self.weights *= old_factor
+        self.weights += (1 - old_factor) * scipy.stats.norm.pdf(distance, loc=dists, scale=self.sigma_mesasurement)
 
         # set weight of particles outside of the map to 0
         # get all particles with position smaller than lower corner of map
