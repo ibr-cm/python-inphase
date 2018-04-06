@@ -210,7 +210,8 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
         # map to 2*Pi
         means = means / 256.0 * 2 * np.pi
 
-        complex_signal = np.cos(means) + 1j * np.sin(means)
+        #complex_signal = np.cos(means) + 1j * np.sin(means)
+        complex_signal = 1 / len(means) * np.exp(1j * means)
 
         # calculate fft
         fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
