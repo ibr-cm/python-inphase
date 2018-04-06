@@ -15,7 +15,7 @@ from inphase.constants import SPEED_OF_LIGHT, DEFAULT_FREQ_SPACING
 
 DEFAULT_FFT_LEN = 4096
 DEFAULT_DC_TRESHOLD = 0
-DEFAULT_MIN_REL_MAX = 40
+DEFAULT_MIN_REL_MAX = 0.2
 
 def calculateDistance(measurement, calc_type='complex', interpolation=None, **kwargs):
     """This function calculates a distance in millimeters a from :class:`Measurement` object.

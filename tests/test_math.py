@@ -39,7 +39,7 @@ class UnitTest(unittest.TestCase):
                                             fft_bins=fft_bins)
 
         self.assertEqual(np.argmax(fft), 88)
-        self.assertAlmostEqual(np.max(fft), 77.00836, places=5)
+        self.assertAlmostEqual(np.max(fft), 0.38504, places=5)
         self.assertEqual(extra_data['complex_signal'].size,
                          len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['complex_signal'].size,
@@ -84,7 +84,7 @@ class UnitTest(unittest.TestCase):
         distance, extra_data = calculateDistance(self.e.measurements[0], calc_type='complex', fft_bins=fft_bins)
 
         self.assertAlmostEqual(distance, 24673.41436, places=5)
-        self.assertAlmostEqual(extra_data['dqi'], 77.00836, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 0.38504, places=5)
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
@@ -117,7 +117,7 @@ class UnitTest(unittest.TestCase):
         distance, extra_data = calculateDistance(clean_sawtooth.measurements[0], calc_type='complex', fft_bins=fft_bins, interpolation='parabolic')
 
         self.assertAlmostEqual(distance, 150095.021346, places=5)
-        self.assertAlmostEqual(extra_data['dqi'], 199.89610, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 0.99948, places=5)
 
     def test_calculateDistanceComplexWithMagnitudeInterpolated(self):
         fft_bins = 1024
@@ -149,8 +149,8 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(len(extra_data['dqis']), 2)
         self.assertAlmostEqual(distances[0], 9972.24512, places=5)
         self.assertAlmostEqual(distances[1], 100011.75616, places=5)
-        self.assertAlmostEqual(extra_data['dqis'][0], 100.15191, places=5)
-        self.assertAlmostEqual(extra_data['dqis'][1], 100.12582, places=5)
+        self.assertAlmostEqual(extra_data['dqis'][0], 0.50076, places=5)
+        self.assertAlmostEqual(extra_data['dqis'][1], 0.50063, places=5)
 
     def test_notImplemented(self):
         with self.assertRaises(NotImplementedError):
