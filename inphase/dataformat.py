@@ -64,6 +64,9 @@ class Experiment:
     def __iter__(self):
         return self.measurements.__iter__()
 
+    def __len__(self):
+        return self.measurements.__len__()
+
     def addMeasurements(self, measurements):
         # this adds the measurement and saves it to the disk (appends to file)
         self.measurements += measurements
