@@ -27,5 +27,8 @@ def parabolic(f, x):
     xv = 1/2. * (f[a] - f[c]) / (f[a] - 2 * f[x] + f[c]) + x
     yv = f[x] - 1/4. * (f[a] - f[c]) * (xv - x)
 
+    if xv < 0:
+        xv = len(f) + xv
+
     return (xv, yv)
 
