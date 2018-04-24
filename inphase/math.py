@@ -11,7 +11,8 @@ from scipy.signal import argrelmax
 import numpy as np
 
 from inphase.interpolation import parabolic
-from inphase.constants import SPEED_OF_LIGHT, DEFAULT_FREQ_SPACING
+from inphase.constants import SPEED_OF_LIGHT, DEFAULT_FREQ_SPACING, MAX_DISTANCE
+from inphase.slope_sampling import calc_dvss_spectrum
 
 DEFAULT_FFT_LEN = 4096
 DEFAULT_DC_TRESHOLD = 0
@@ -102,6 +103,9 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
                 distance = _slope_to_dist(norm_bin_pos)
             elif calc_type == 'complex_with_magnitude':
                 distance = _slope_to_dist(norm_bin_pos)
+            elif calc_type == 'dvss':
+                # TODO check this multi value??
+                distance = _slope_to_dist(norm_bin_pos, half_d_max=True)
 
         # subtract antenna offsets if provided
         distance = substract_provided_offsets(measurement, distance)
@@ -223,6 +227,11 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
             # maximum positive and minimum negative frequency are aliases,
             # remove the minumum negative frequency
             fft_result = np.delete(fft_result, int(fft_bins / 2))
+    elif calc_type == 'dvss':
+        # calculate max_dist and resolution to get sample slopes simliar to fft bins
+        max_distance = MAX_DISTANCE
+        fft_result = calc_dvss_spectrum(measurement, max_distance,
+                                        resolution=fft_bins)
     else:
         raise NotImplementedError('The chosen calc_type does not exist!')
 
