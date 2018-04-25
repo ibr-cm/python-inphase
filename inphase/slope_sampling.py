@@ -114,8 +114,6 @@ def _calc_A_B_matrices(nr_samples, nr_comb, delta_phis, m_samples):
     """Calculate matrix A (eq. 10) and matrix B (eq. 11)."""
     # index_res = np.array([(a, b) for a in range(0, nr_samples) for b in range(0, nr_comb)]).T
 
-    print(nr_samples, nr_comb, np.array(delta_phis).shape, m_samples.shape)
-
     # eq 10
     # A_Delta = np.array(delta_phis)[index_res[1]]
     A_Delta = np.tile(np.array(delta_phis), (nr_samples, 1))
