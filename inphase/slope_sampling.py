@@ -153,8 +153,8 @@ def dvss_spectrum(delta_phi, delta_f, df, cut, d_samples, conf_rel, res_tol):
     sort_res_min = np.sort(Rmin, 0)
     # eq 14
     res = np.median(sort_res_min[0:freq_include], 0)
-    frame_length = int(np.ceil(len(res)/10))
-    frame_length = 211
+    # frame_length = int(np.ceil(len(res)/10))
+    # frame_length = 211
     # residues_filtered = savgol_filter(res, frame_length, 7)
     residues_filtered = res
 
