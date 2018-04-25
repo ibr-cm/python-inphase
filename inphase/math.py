@@ -105,7 +105,7 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
                 distance = _slope_to_dist(norm_bin_pos)
             elif calc_type == 'dvss':
                 # TODO check this multi value??
-                distance = _slope_to_dist(norm_bin_pos, half_d_max=True)
+                distance = _slope_to_dist(norm_bin_pos, half_d_max=False)
 
         # subtract antenna offsets if provided
         distance = substract_provided_offsets(measurement, distance)
