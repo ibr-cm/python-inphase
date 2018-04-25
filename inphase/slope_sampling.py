@@ -8,12 +8,8 @@ from the phase data by using slope-sampling techniques.
 
 import numpy as np
 from scipy.signal import savgol_filter
-import peakutils.peak
 
 from inphase.constants import SPEED_OF_LIGHT
-
-from scipy.io import loadmat
-import matplotlib.pyplot as plt
 
 
 def prepare_pmu_samples(measurement):
@@ -167,6 +163,10 @@ def dvss_spectrum(delta_phi, delta_f, df, cut, d_samples, conf_rel, res_tol):
 
 
 def slope_sampling(delta_phi, delta_f, df, cut, d_samples, conf_rel, res_tol):
+    from scipy.io import loadmat
+    import matplotlib.pyplot as plt
+    import peakutils.peak
+
     """Actual implementation of the dvss algorithm.
     TODO refactoring / pythonic rewrite recommended."""
     delta_phis, nr_comb = _calc_delta_phi(delta_phi, delta_f, df)
