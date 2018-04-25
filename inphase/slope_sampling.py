@@ -27,7 +27,7 @@ def prepare_pmu_samples(measurement):
         delta_f: The frequency offsets in Hz
         frequency_step: The difference between the first and the second frequency in Hz
     """
-    pmu_data = np.array([(sample['frequency'], 127 + sample['pmu_values'][0]) for sample in measurement['samples'][0:100]])
+    pmu_data = np.array([(sample['frequency'], 127 + sample['pmu_values'][0]) for sample in measurement['samples']])
 
     # calculate frequency offsets and step
     delta_f = 10**6 * (pmu_data.T[0] - 2400)
