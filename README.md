@@ -20,4 +20,4 @@ If you want to develop this module you can instruct the setup not to copy the mo
 
 ## Check test coverage
 1. Run `nosetests --with-coverage` to run unit tests and generate a coverage report
-2. Run `coverage -report -m inphase/*` to display test coverage of the inphase module
+2. Run `coverage report -m` to display test coverage of the inphase module
