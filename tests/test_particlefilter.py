@@ -73,6 +73,29 @@ class UnitTest(unittest.TestCase):
 
         self.assertGreaterEqual(particlefilter.particle_quality, 0.95)
 
+    def test_ParticleFilterLocalizationTimestamped(self):
+        world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world)
+
+        max_error = 30  # we tolerate 3 centimeter error for this test
+
+        for _ in range(50):
+            particlefilter.tick('Anchor 1', [500, 100, 200], 0, 1, timestamp=100)
+            particlefilter.tick('Anchor 2', [100, 100, 200], 400, 1, timestamp=102)
+            particlefilter.tick('Anchor 3', [500, 100, -300], 500, 1, timestamp=102.5)
+            particlefilter.tick('Anchor 3', [500, 100, -300], 500, 1, timestamp=102.4)
+
+        self.assertGreaterEqual(particlefilter.tag_position[0], 500 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[0], 500 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[1], 100 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[1], 100 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[2], 200 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[2], 200 + max_error)
+
+        self.assertGreaterEqual(particlefilter.particle_quality, 0.95)
+
     def test_ParticleFilterLocalization_2DMode(self):
         world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
         particlefilter = inphase.localization.particlefilter.ParticleFilter(world, dimensions=2)
@@ -82,7 +105,7 @@ class UnitTest(unittest.TestCase):
         for _ in range(50):
             particlefilter.tick('Anchor 1', [500, 100, 200], 0, 1)
             particlefilter.tick('Anchor 2', [100, 100, 200], 400, 1)
-            particlefilter.tick('Anchor 3', [500, 500, 200], 400, 1)
+            particlefilter.tick('Anchor 3', [500, 500], 400, 1)  # z coordinate can be omitted
 
         self.assertGreaterEqual(particlefilter.tag_position[0], 500 - max_error)
         self.assertLessEqual(particlefilter.tag_position[0], 500 + max_error)
@@ -91,6 +114,58 @@ class UnitTest(unittest.TestCase):
         self.assertLessEqual(particlefilter.tag_position[1], 100 + max_error)
 
         self.assertEqual(particlefilter.tag_position[2], 0)
+
+        self.assertGreaterEqual(particlefilter.particle_quality, 0.95)
+
+    def test_ParticleFilterToString(self):
+        world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world)
+        self.assertEqual(str(particlefilter), '(0, 0, 0) q=0.000')
+
+    def test_ParticleFilterRandomInit(self):
+        particle_count = 10000
+        world = inphase.localization.particlefilter.World((-2000, 1000), (-250, 1500), (0, 700))
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world, particle_count=particle_count)
+
+        particlefilter.randomizeParticles(stratified=False)
+
+        # check if particles are inside world
+        for position in particlefilter.positions:
+            for pos, wmin, wmax in zip(position, world.dimensions_min, world.dimensions_max):
+                self.assertGreaterEqual(pos, wmin)
+                self.assertLessEqual(pos, wmax)
+
+    def test_ParticleFilterForceHardReset(self):
+        world = inphase.localization.particlefilter.World((-2000, 50000), (-250, 75000), (0, 35000))
+        particlefilter = inphase.localization.particlefilter.ParticleFilter(world, particle_count=10000)
+
+        max_error = 1000  # we tolerate 100 centimeter error for this test
+
+        for _ in range(10):
+            particlefilter.tick('Anchor 1', [0, 0, 0], 0, 1)
+            particlefilter.tick('Anchor 2', [100, 0, 0], 100, 1)
+            particlefilter.tick('Anchor 3', [0, 0, -300], 300, 1)
+
+        # jump to another location
+
+        with self.assertLogs(inphase.localization.particlefilter.logger, level='WARNING') as cm:
+            particlefilter.tick('Anchor 1', [10000, 15000, 7000], 0, 1)
+
+        self.assertEqual(cm.output, ['WARNING:inphase.localization.particlefilter:Particle Filter needed hard reset!'])
+
+        for _ in range(50):
+            particlefilter.tick('Anchor 1', [10000, 15000, 7000], 0, 1)
+            particlefilter.tick('Anchor 2', [10000, 10000, 7000], 5000, 1)
+            particlefilter.tick('Anchor 3', [10000, 15000, 2000], 5000, 1)
+
+        self.assertGreaterEqual(particlefilter.tag_position[0], 10000 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[0], 10000 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[1], 15000 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[1], 15000 + max_error)
+
+        self.assertGreaterEqual(particlefilter.tag_position[2], 7000 - max_error)
+        self.assertLessEqual(particlefilter.tag_position[2], 7000 + max_error)
 
         self.assertGreaterEqual(particlefilter.particle_quality, 0.95)
 
