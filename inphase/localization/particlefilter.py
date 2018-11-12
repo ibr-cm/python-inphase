@@ -11,17 +11,6 @@ import time
 import logging
 
 logger = logging.getLogger(__name__)
-#############################
-# Dimension of the used map #
-#############################
-# TU-night world
-# world = (-2353, 4754, 2753, -1163)
-# miklab world
-# world = (0, 1100, 700, 0, 300, 0)
-# Seatle
-# world = (-2500, 1500, -750, 2200, 300, 0)
-# hall
-# world = (-2000, 1000, -250, 1500, 700, 0)
 
 
 class World:
@@ -43,7 +32,7 @@ class ParticleFilter:
     It uses particles to find the position of a tag in 3D space.
 
     Each particle represents a possible position for the tag to be localized.
-    Each Particle has weight (likeliness) to be in the correct position.
+    Each particle has a weight (likeliness) to be in the correct position.
     Particles are moved around to find better positions.
     """
 
@@ -73,10 +62,11 @@ class ParticleFilter:
     def __str__(self):
         return "(%.0f, %.0f, %.0f) q=%.3f" % (self.tag_position[0], self.tag_position[1], self.tag_position[2], self.particle_quality)
 
-    def randomizeParticles(self):
+    def randomizeParticles(self, stratified=True):
         """Puts particles into random positions on the map to restart the algorithm
         """
-        if False:
+        if not stratified:
+            # generate totally random particle positions
             self.positions = np.random.uniform(self.world.dimensions_min, self.world.dimensions_max, (self.particle_count, 3))
 
             # reset weights
@@ -86,6 +76,8 @@ class ParticleFilter:
             self.last_timestamp = time.time()
 
             return
+
+        # generate stratified particle positions (stratified sampling)
 
         # volume/area of the world
         x_range = self.world.dimensions_max[0] - self.world.dimensions_min[0]
@@ -187,21 +179,19 @@ class ParticleFilter:
         # normalize weights (the sum must be 1.0)
         self.weights /= np.sum(self.weights)  # sum of weights is now 1
 
-    def localize(self, delta):
+    def localize(self, delta, fitting_fraction=0.1):
         """Calculates the average tags position based on the particles and their weights
         """
+
         #self.tag_position = np.dot(self.weights, self.positions)
         #self.tag_position = np.median(self.positions, 0)
-
         #self.tag_position = np.average(self.positions, 0)
 
-        fitting_fraction = 0.1
         fitting_particles = int(self.particle_count * fitting_fraction)
         new_position = np.median(self.positions[np.argsort(self.weights)[-fitting_particles:]], 0)
 
         self.movement_vector = new_position - self.tag_position
 
-        #self.tag_position = new_position
         if delta is None:
             self.tag_position = new_position
         elif delta > 1:
@@ -210,9 +200,8 @@ class ParticleFilter:
             pass
         else:
             self.tag_position = (1 - delta) * self.tag_position + delta * new_position
-        #self.tag_position = 0.9 * self.tag_position + 0.1 * new_position
 
-        # get the sum of the 100 best fitting particle's weights
+        # get the sum of the best fitting particle's weights
         self.particle_quality = np.sum(self.weights[np.argsort(self.weights)[-fitting_particles:]]) / fitting_particles * self.particle_count
 
     def resample(self):
