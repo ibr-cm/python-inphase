@@ -177,7 +177,13 @@ class ParticleFilter:
         self.weights[outside_high] = 0
 
         # normalize weights (the sum must be 1.0)
-        self.weights /= np.sum(self.weights)  # sum of weights is now 1
+        weight_sum = np.sum(self.weights)
+        if weight_sum > 0:
+            self.weights /= weight_sum  # sum of weights is now 1
+        else:
+            # if all particles are highly unlikely, reset the filter
+            logger.warning('Particle Filter needed hard reset!')
+            self.randomizeParticles()
 
     def localize(self, delta, fitting_fraction=0.1):
         """Calculates the average tags position based on the particles and their weights
@@ -213,13 +219,8 @@ class ParticleFilter:
         drawn = np.random.multinomial(self.particle_count, self.weights)  # each element of the array tells how often that index was drawn
 
         # make an array which contains the drawn positions the correct number of times
-        try:
-            self.positions = np.repeat(self.positions, drawn, 0)
-            self.weights = np.repeat(self.weights, drawn, 0)
-        except ValueError:
-            # the above line can fail if all particles are highly unlikely and none of them was drawn
-            logger.warning('Particle Filter needed hard reset!')
-            self.randomizeParticles()
+        self.positions = np.repeat(self.positions, drawn, 0)
+        self.weights = np.repeat(self.weights, drawn, 0)
 
     def adapt(self):
         if self.particle_quality > 0.2:
