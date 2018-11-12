@@ -8,7 +8,9 @@ import numpy as np
 import scipy
 
 import time
+import logging
 
+logger = logging.getLogger(__name__)
 #############################
 # Dimension of the used map #
 #############################
@@ -227,7 +229,7 @@ class ParticleFilter:
             self.weights = np.repeat(self.weights, drawn, 0)
         except ValueError:
             # the above line can fail if all particles are highly unlikely and none of them was drawn
-            print('WARNING: Particle Filter needed hard reset!')
+            logger.warning('Particle Filter needed hard reset!')
             self.randomizeParticles()
 
     def adapt(self):
@@ -246,7 +248,7 @@ class ParticleFilter:
         else:
             self.sigma_prediction = 100
             self.particle_count = 15000
-        print("new parameters: particle_count=%s, sigma_prediction=%s" % (self.particle_count, self.sigma_prediction))
+        logger.debug("new parameters: particle_count=%s, sigma_prediction=%s" % (self.particle_count, self.sigma_prediction))
 
     def tick(self, anchor_id, anchor_pos, distance, dqf, timestamp=None):
         if timestamp is None:
