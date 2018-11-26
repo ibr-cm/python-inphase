@@ -12,6 +12,7 @@ import threading
 import socket
 import logging
 import queue
+import itertools
 
 
 class MeasurementProvider:
@@ -23,14 +24,19 @@ class MeasurementProvider:
 class ConstantRateMeasurementProvider(MeasurementProvider):
 
     def __init__(self, measurements, output_rate=1, loop=True):
-        self.measurements = measurements
-        self.output_rate = output_rate
-        self.loop = loop
+        if loop:
+            # iterator should start from the beginning if list ended
+            self.measurements = itertools.cycle(measurements)
+        else:
+            self.measurements = iter(measurements)
 
+        self.output_rate = output_rate
         self.last_timestamp = time.time()
-        self.last_index = 0
 
     def getMeasurements(self):
+        # list of measurements that will be returned
+        to_return = list()
+
         # get current time
         t = time.time()
 
@@ -40,19 +46,17 @@ class ConstantRateMeasurementProvider(MeasurementProvider):
         # number of measurements that need to be returned (have been generated since the last call)
         measurement_count = math.floor(delta * self.output_rate)
 
-        # get measurements from list
-        to_return = list()
-        if self.loop:
-            for i in range(measurement_count):
-                self.last_index = (self.last_index + 1) % len(self.measurements)
-                to_return.append(self.measurements[self.last_index])
-        else:
-            to_return = self.measurements[self.last_index:self.last_index + measurement_count]
-            self.last_index += measurement_count
+        # no measurements needed, stop early
+        if measurement_count == 0:
+            return to_return
 
-        # timestamp from this call is saved only when measurements were returned
-        if measurement_count > 0:
-            self.last_timestamp = t
+        # get measurements from list
+        for m in self.measurements:
+            to_return.append(m)
+            if len(to_return) == measurement_count:
+                break
+
+        self.last_timestamp = t
 
         return to_return
 
