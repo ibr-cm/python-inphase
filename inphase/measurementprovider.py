@@ -53,11 +53,14 @@ class ConstantRateMeasurementProvider(MeasurementProvider):
         # get measurements from list
         for m in self.measurements:
             m_copy = Measurement(m)
+
+            # set new timestamp
+            self.last_timestamp += (1 / self.output_rate)
+            m_copy['timestamp'] = self.last_timestamp
+
             to_return.append(m_copy)
             if len(to_return) == measurement_count:
                 break
-
-        self.last_timestamp = t
 
         return to_return
 

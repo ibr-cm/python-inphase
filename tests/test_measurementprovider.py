@@ -176,6 +176,24 @@ class UnitTest(unittest.TestCase):
         # the two measurements should not be the same object, they need to be copies of each other!
         self.assertFalse(m1[0] is m2[0])
 
+    def test_ConstantRateMeasurementProviderTimestamps(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements, output_rate=100, loop=True)
+        time.sleep(0.1)
+        m1 = self.p.getMeasurements()
+        self.assertEqual(len(m1), 10)
+        time.sleep(0.2)
+        m2 = self.p.getMeasurements()
+        self.assertGreaterEqual(len(m2), 20)
+
+        measurements = m1 + m2
+
+        last_timestamp = measurements[0]['timestamp']
+        for m in measurements[1:]:
+            new_timestmap = m['timestamp']
+            delta = new_timestmap - last_timestamp
+            self.assertAlmostEqual(delta, 0.01, places=4)
+            last_timestamp = new_timestmap
+
     def test_InPhaseBridgeMeasurementProvider(self):
         # start a TCP server that reads from a file
         serial_sock = socket.socket()
