@@ -167,6 +167,15 @@ class UnitTest(unittest.TestCase):
         time.sleep(3)
         self.assertEqual(len(self.p.getMeasurements()), 1)
 
+    def test_ConstantRateMeasurementProvider_copy(self):
+        self.p = ConstantRateMeasurementProvider(self.measurements[0:1], output_rate=10, loop=True)
+        time.sleep(0.1)
+        m1 = self.p.getMeasurements()
+        time.sleep(0.1)
+        m2 = self.p.getMeasurements()
+        # the two measurements should not be the same object, they need to be copies of each other!
+        self.assertFalse(m1[0] is m2[0])
+
     def test_InPhaseBridgeMeasurementProvider(self):
         # start a TCP server that reads from a file
         serial_sock = socket.socket()

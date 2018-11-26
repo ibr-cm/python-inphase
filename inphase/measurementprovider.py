@@ -52,7 +52,8 @@ class ConstantRateMeasurementProvider(MeasurementProvider):
 
         # get measurements from list
         for m in self.measurements:
-            to_return.append(m)
+            m_copy = Measurement(m)
+            to_return.append(m_copy)
             if len(to_return) == measurement_count:
                 break
 
