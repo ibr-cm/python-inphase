@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='inphase',
       version='0.1',
@@ -7,7 +7,7 @@ setup(name='inphase',
       author='Yannic Schröder',
       author_email='schroeder@ibr.cs.tu-bs.de',
       license='MIT',
-      packages=['inphase'],
+      packages=find_packages(),
       install_requires=[
           'numpy',
           'pyserial',
