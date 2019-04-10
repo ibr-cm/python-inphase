@@ -50,8 +50,8 @@ class UnitTest(unittest.TestCase):
                                             calc_type='complex_with_magnitude',
                                             fft_bins=fft_bins)
 
-        self.assertEqual(np.argmax(fft), 9)
-        self.assertAlmostEqual(np.max(fft), 0.00649, places=5)
+        self.assertEqual(np.argmax(fft), 10)
+        self.assertAlmostEqual(np.max(fft), 1.78406, places=5)
         self.assertEqual(extra_data['complex_signal'].size,
                          len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['complex_signal'].size,
@@ -92,8 +92,8 @@ class UnitTest(unittest.TestCase):
         fft_bins = 1024
         distance, extra_data = calculateDistance(self.e_rssi.measurements[0], calc_type='complex_with_magnitude', fft_bins=fft_bins)
 
-        self.assertAlmostEqual(distance, 2634.89465, places=5)
-        self.assertAlmostEqual(extra_data['dqi'], 0.00649, places=5)
+        self.assertAlmostEqual(distance, 2927.66072, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 1.78406, places=5)
         self.assertEqual(extra_data['complex_signal'].size, len(self.e.measurements[0]['samples']))
         self.assertEqual(extra_data['fft'].size, int(fft_bins))
 
@@ -126,8 +126,8 @@ class UnitTest(unittest.TestCase):
 
         distance, extra_data = calculateDistance(self.e_rssi.measurements[0], calc_type='complex_with_magnitude', fft_bins=fft_bins, interpolation='parabolic')
 
-        self.assertAlmostEqual(distance, 2722.81638, places=5)
-        self.assertAlmostEqual(extra_data['dqi'], 0.00652, places=5)
+        self.assertAlmostEqual(distance, 2824.55556, places=5)
+        self.assertAlmostEqual(extra_data['dqi'], 1.79600, places=5)
 
     def test_calculateDistanceComplexOddFFT(self):
         clean_sawtooth = Experiment(os.path.join(THIS_DIR, 'testdata/math_data/clean_sawtooth.yml'))

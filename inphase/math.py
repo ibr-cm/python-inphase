@@ -160,6 +160,16 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
     # take mean of rssi samples
     if rssi:
         rssi = np.mean(rssi[:], 1)
+        # convert rssi values to dBm according to the AT86RF233 datasheet
+        rssi = -94 + 3 * rssi
+
+        # convert dBm to milliwatt
+        rssi = 10 ** (rssi / 10)
+
+        extra_data['rssi'] = rssi
+
+        # convert to voltage, impedance is 50 ohm
+        voltage = np.sqrt(rssi * 50)
 
     # use fft variant to calculate spectrum
 
@@ -183,16 +193,7 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
         # map to 2*Pi
         means = means / 256.0 * 2 * np.pi
 
-        # convert rssi values to dBm according to the AT86RF233 datasheet
-        rssi = -94 + 3 * rssi
-
-        # convert dBm to milliwatt
-        rssi = 10 ** (rssi / 10)
-
-        # scale so -10 dBm (maximum possible value) is 1
-        rssi /= 0.1
-
-        complex_signal = rssi * np.exp(1j * means)
+        complex_signal = voltage * np.exp(1j * means)
 
         # calculate fft
         fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
