@@ -46,7 +46,7 @@ def calculateDistance(measurement, calc_type='complex', interpolation=None, **kw
     # Take first = global maximum
     extra_data['dqi'] = extra_data['dqis'][0]
     #extra_data['multipath_dqi'] = _compute_multipath_dqi(extra_data['fft'])
-    _compute_multipath_distance(extra_data, measurement)
+    _compute_multipath_distance(extra_data, measurement, **kwargs)
     distance = distances[0]
 
     return distance, extra_data
@@ -122,7 +122,10 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
     return distances, extra_data
 
 
-def _compute_multipath_distance(extra_data, measurement):
+def _compute_multipath_distance(extra_data, measurement, **kwargs):
+    percent = kwargs.get('percent', 97)
+    dqi_factor = kwargs.get('dqi_factor', 0.3)
+
     # this would be the original distance computation
     fft = extra_data['fft']
     pos = np.argmax(fft)
@@ -133,8 +136,8 @@ def _compute_multipath_distance(extra_data, measurement):
     values = fft_chopped[relmax]
     zipped = zip(relmax.tolist(), values.tolist())
 
-    percentile = np.percentile(fft, 97)
-    threshold = percentile + (dqi - percentile) * 0.3
+    percentile = np.percentile(fft, percent)
+    threshold = percentile + (dqi - percentile) * dqi_factor
 
     new_pos = None
     for relpos, reldqi in zipped:
@@ -163,7 +166,7 @@ def _compute_multipath_distance(extra_data, measurement):
     if extra_data['multipath_bin'] == 0:
         extra_data['multipath_dqi'] = 0
     else:
-        extra_data['multipath_dqi'] = bin_value - np.max(fft[:i+1])
+        extra_data['multipath_dqi'] = bin_value - np.max(fft[:i + 1])
 
     extra_data['multipath_percentile'] = threshold
 
@@ -220,8 +223,8 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
     for sample in measurement['samples']:
         frequencies.append(sample['frequency'])
         pmu_values.append(sample['pmu_values'])
-        if 'rssi' in sample:
-            rssi.append(sample['rssi'])
+        if 'rssi_remote' in sample:
+            rssi.append(sample['rssi_remote'])
 
     # take mean of values as they might contain more than one pmu value per frequency
     # TODO: this is a bad idea, phase angles have to be averaged in the complex plane!
@@ -283,6 +286,9 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
 
         #complex_signal = np.cos(means) + 1j * np.sin(means)
         complex_signal = 1 / len(means) * np.exp(1j * means)
+
+        #window = np.hamming(len(means))
+        #complex_signal *= window
 
         # calculate fft
         fft_result = np.absolute(np.fft.fft(complex_signal, fft_bins)[0:int(fft_bins)])
