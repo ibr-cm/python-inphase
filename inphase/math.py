@@ -45,6 +45,8 @@ def calculateDistance(measurement, calc_type='complex', interpolation=None, **kw
 
     # Take first = global maximum
     extra_data['dqi'] = extra_data['dqis'][0]
+    #extra_data['multipath_dqi'] = _compute_multipath_dqi(extra_data['fft'])
+    _compute_multipath_distance(extra_data, measurement)
     distance = distances[0]
 
     return distance, extra_data
@@ -118,6 +120,74 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
     extra_data['dqis'] = dqis
 
     return distances, extra_data
+
+
+def _compute_multipath_distance(extra_data, measurement):
+    # this would be the original distance computation
+    fft = extra_data['fft']
+    pos = np.argmax(fft)
+    dqi = fft[pos]
+
+    fft_chopped = fft[:pos]
+    relmax = argrelmax(fft_chopped)[0]
+    values = fft_chopped[relmax]
+    zipped = zip(relmax.tolist(), values.tolist())
+
+    percentile = np.percentile(fft, 97)
+    threshold = percentile + (dqi - percentile) * 0.3
+
+    new_pos = None
+    for relpos, reldqi in zipped:
+        if reldqi > threshold:
+            new_pos = relpos
+            break
+
+    if new_pos is not None:
+        pos = new_pos
+
+    extra_data['multipath_bin'] = pos
+    pos, bin_value = _interpolate_maxima_position(fft, pos, mode='parabolic')
+
+    dist = _slope_to_dist(pos / len(fft))
+    dist = substract_provided_offsets(measurement, dist)
+
+    extra_data['multipath_distance'] = dist
+
+    # find the minimum left of the peak
+    current_min = bin_value
+    for i in reversed(range(extra_data['multipath_bin'])):
+        if fft[i] > current_min:
+            break
+        current_min = fft[i]
+
+    if extra_data['multipath_bin'] == 0:
+        extra_data['multipath_dqi'] = 0
+    else:
+        extra_data['multipath_dqi'] = bin_value - np.max(fft[:i+1])
+
+    extra_data['multipath_percentile'] = threshold
+
+
+def _compute_multipath_dqi(fft):
+    pos = np.argmax(fft)
+    dqi = fft[pos]
+
+    #if pos == 0:
+        # we cannot find another value...
+    #    return 0.0
+
+    #fft = fft[:pos]
+
+    relmax = argrelmax(fft)[0]
+    values = fft[relmax]
+
+    zipped = list(zip(relmax.tolist(), values.tolist()))
+    zipped.sort(key=lambda tup: tup[1], reverse=True)
+
+    # largest value minus second largest value
+    mpdqi = dqi * (dqi - zipped[1][1])
+
+    return mpdqi
 
 
 def _in_dc_threshold(bin_pos, dc_threshold, fft_bins):
