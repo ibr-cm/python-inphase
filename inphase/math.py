@@ -247,6 +247,9 @@ def substract_provided_offsets(measurement, distance):
         if 'antenna_offset' in measurement['reflector']:
             distance -= measurement['reflector']['antenna_offset']
 
+    if 'clock_drift_error' in measurement:
+        distance -= measurement['clock_drift_error']
+
     return distance
 
 
