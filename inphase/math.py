@@ -124,7 +124,7 @@ def calculateDistances(measurement, calc_type='complex', interpolation=None, mul
 
 def _compute_multipath_distance(extra_data, measurement, **kwargs):
     percent = kwargs.get('percent', 97)
-    dqi_factor = kwargs.get('dqi_factor', 0.3)
+    dqi_factor = kwargs.get('dqi_factor', 0.37)
 
     # this would be the original distance computation
     fft = extra_data['fft']
