@@ -85,7 +85,7 @@ class Experiment:
                     for s in d['samples']:
                         samples.append(dict(s))
                     d['samples'] = samples
-                yaml.dump([d], f, Dumper=Dumper)
+                yaml.dump([d], f, Dumper=Dumper, default_flow_style=None)
 
     def addMeasurement(self, measurement):
         self.addMeasurements([measurement])
