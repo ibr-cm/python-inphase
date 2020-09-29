@@ -153,7 +153,7 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(cm.output, ['WARNING:inphase.localization.particlefilter:Particle Filter needed hard reset!'])
 
-        for _ in range(50):
+        for _ in range(155):
             particlefilter.tick('Anchor 1', [10000, 15000, 7000], 0, 1)
             particlefilter.tick('Anchor 2', [10000, 10000, 7000], 5000, 1)
             particlefilter.tick('Anchor 3', [10000, 15000, 2000], 5000, 1)
