@@ -243,6 +243,8 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
 
         # convert to voltage, impedance is 50 ohm
         voltage = np.sqrt(rssi * 50)
+    else:
+        voltage = None
 
     # use fft variant to calculate spectrum
 
@@ -265,6 +267,9 @@ def calc_fft_spectrum(measurement, calc_type, fft_bins=DEFAULT_FFT_LEN):
     elif calc_type == 'complex_with_magnitude':
         # map to 2*Pi
         means = means / 256.0 * 2 * np.pi
+
+        if voltage is None:
+            raise Exception("You are trying to compute the distance with the \"complex_with_magnitude\" algorithm, but your measurement data does not contain RSSI values.")
 
         complex_signal = voltage * np.exp(1j * means)
 
