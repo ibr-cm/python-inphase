@@ -11,6 +11,7 @@ import time
 import socket
 import logging
 import sys
+import tempfile
 import os
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -77,33 +78,35 @@ class UnitTest(unittest.TestCase):
         COUNT = 4
         FFT_BINS = 2048
 
-        experiment = Experiment('test_SawtoothMeasurementProvider.yml')
-        provider = SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
-        measurements = provider.getMeasurements()
-        self.assertEqual(len(measurements), COUNT)
-        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
-        for measurement in measurements:
-            calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
-            experiment.addMeasurement(measurement)
-            self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
+        with tempfile.NamedTemporaryFile() as f:
+            experiment = Experiment(f.name)
+            provider = SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
+            measurements = provider.getMeasurements()
+            self.assertEqual(len(measurements), COUNT)
+            FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
+            for measurement in measurements:
+                calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
+                experiment.addMeasurement(measurement)
+                self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
 
     def test_SawtoothMeasurementProviderAccuracy(self):
         DISTANCE = 37000  # Distance to generate Measurements for
         COUNT = 2
         FFT_BINS = 2048
 
-        experiment = inphase.Experiment('test_SawtoothMeasurementProvider.yml')
-        FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
-        for distance in range(0, 300000, 50000):
-            DISTANCE = distance
-            provider = inphase.measurementprovider.SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
-            measurements = provider.getMeasurements()
-            self.assertEqual(len(measurements), COUNT)
+        with tempfile.NamedTemporaryFile() as f:
+            experiment = inphase.Experiment(f.name)
+            FFT_RESOLUTION = 1000 * inphase.constants.MAX_DISTANCE / FFT_BINS
+            for distance in range(0, 300000, 50000):
+                DISTANCE = distance
+                provider = inphase.measurementprovider.SawtoothMeasurementProvider(distance=DISTANCE, count=COUNT)
+                measurements = provider.getMeasurements()
+                self.assertEqual(len(measurements), COUNT)
 
-            for measurement in measurements:
-                calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
-                experiment.addMeasurement(measurement)
-                self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
+                for measurement in measurements:
+                    calculated_distance, extra_data = inphase.math.calculateDistance(measurement, fft_bins=FFT_BINS)
+                    experiment.addMeasurement(measurement)
+                    self.assertLess(abs(calculated_distance - DISTANCE), FFT_RESOLUTION)
 
     def test_InphasectlMeasurementProvider(self):
         thread = threading.Thread(target=inphasectl_mockup.main)
