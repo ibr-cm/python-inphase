@@ -104,3 +104,72 @@ class MRLADecimator(MeasurementModifier):
             if ant == 'x':
                 new_samples.append(s)
         measurement['samples'] = new_samples
+
+
+class PMUSampleError(MeasurementModifier):
+
+    """Replaces PMU samples with random data
+
+    Attributes:
+        count (int): number of samples to replace with random data
+    """
+
+    def __init__(self, count=100):
+        self.count = count
+        self.rng = np.random.default_rng(17121986)  # initialize random number generator with predictable randomness (seed)
+
+    def add_error(self, samples):
+        # create random data in range [-127, 128]
+        random_data = self.rng.integers(-127, 128, size=self.count, endpoint=True)
+
+        # spread random samples across the sample array
+        nans = np.zeros(len(samples) - self.count)  # create zero array
+        nans[:] = np.nan  # set everything to nan
+        random_positions = np.concatenate((random_data, nans))  # join both arrays
+        self.rng.shuffle(random_positions)  # shuffle the random positions
+
+        for sample, random_value in zip(samples, random_positions):
+            if not np.isnan(random_value):
+                sample['pmu_values'] = [int(random_value) for val in sample['pmu_values']]  # replace all samples with the random value
+
+    def modify(self, m):
+        self.add_error(m['samples'])
+
+
+class PMUBurstError(MeasurementModifier):
+
+    """Replaces a block of samples with random data
+
+    Attributes:
+        length (int): Block length to replace
+    """
+
+    def __init__(self, length=100):
+        self.length = length
+        self.rng = np.random.default_rng(17121986)  # initialize random number generator with predictable randomness (seed)
+
+    def add_error(self, samples):
+        # create random data in range [-127, 128]
+        random_data = self.rng.integers(-127, 128, size=self.length, endpoint=True)
+
+        # generate offset where to place the random data
+        offset = self.rng.integers(0, len(samples) - self.length, size=1, endpoint=True)[0]  # make sure the random_data always fits into the samples (no overlap at end)
+
+        nans = np.zeros(offset)  # create zero array
+        nans[:] = np.nan  # set everything to nan
+
+        # add offset to beginning
+        burst_error = np.concatenate((nans, random_data))
+
+        nans = np.zeros(len(samples) - len(burst_error))  # create zero array
+        nans[:] = np.nan  # set everything to nan
+
+        # add nans to end
+        burst_error = np.concatenate((burst_error, nans))
+
+        for sample, random_value in zip(samples, burst_error):
+            if not np.isnan(random_value):
+                sample['pmu_values'] = [int(random_value) for val in sample['pmu_values']]  # replace all samples with the random value
+
+    def modify(self, m):
+        self.add_error(m['samples'])

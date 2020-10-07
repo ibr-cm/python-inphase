@@ -15,5 +15,7 @@ from .measurementmodifier import MRLADecimator
 from .measurementmodifier import MRLAInterpolator
 from .measurementmodifier import CutoffDecimator
 from .measurementmodifier import PMUNoise
+from .measurementmodifier import PMUSampleError
+from .measurementmodifier import PMUBurstError
 from . import constants
 from . import localization
